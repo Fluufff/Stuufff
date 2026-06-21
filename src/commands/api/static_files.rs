@@ -1,8 +1,12 @@
+use axum::extract::State;
 use axum::http::Uri;
 use axum::response::{IntoResponse, Response};
-use http::{StatusCode, header};
+use http::{HeaderMap, StatusCode, header};
 use mime_guess::{Mime, mime};
 use rust_embed::{Embed, EmbeddedFile};
+
+use crate::commands::api::ApiState;
+use crate::commands::api::v1::auth::AuthInfo;
 
 #[derive(Embed)]
 #[folder = "web/build"]
@@ -48,10 +52,17 @@ where
     }
 }
 
-pub async fn static_handler(path: Uri) -> impl IntoResponse {
+pub async fn static_handler(
+    path: Uri,
+    headers: HeaderMap,
+    State(state): State<ApiState>,
+) -> Response {
     let mut path = path.path().trim_start_matches('/');
     if path.is_empty() {
         path = "index.html";
     }
-    StaticFile(path.to_owned())
+    match AuthInfo::get_or_redirect(&headers, &state.config, Some(format!("/{path}"))) {
+        Ok(_) => StaticFile(path.to_owned()).into_response(),
+        Err(r) => r,
+    }
 }

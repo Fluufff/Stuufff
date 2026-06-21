@@ -29,6 +29,10 @@ mime_guess = "2.0.5"
 axum-swagger-ui = "0.3.0"
 tower = { version = "0.5.2", features = [] }
 rust-embed = { version = "8.5.0", features = ["interpolate-folder-path", "compression"] }
+reqwest = { version = "0.13.3", features = ["blocking", "rustls", "charset", "http2", "json", "form", "query"], default-features = false }
+serde_urlencoded = "0.7.1"
+jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
+rand = "0.10.1"
 
 [build-dependencies]
 shadow-rs = { version = "2.0.0", features = ["metadata"] }

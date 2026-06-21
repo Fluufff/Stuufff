@@ -14,10 +14,11 @@ use static_files::static_handler;
 use std::net::{Ipv6Addr, SocketAddrV6};
 
 mod static_files;
+mod v1;
 
-fn api_router(_v1state: ApiState) -> Router {
+fn api_router(v1state: ApiState) -> Router<ApiState> {
     Router::new()
-        // .nest("/v0beta1", v1::init().with_state(v1state.clone()))
+        .nest("/v1", v1::init().with_state(v1state.clone()))
         .fallback(fallback)
 }
 
@@ -59,9 +60,10 @@ pub async fn run(input: RunInput) -> Result<(), RuntimeError> {
     let state = ApiState::new(config.clone()).await?;
     let router = Router::new()
         // .nest("/z", z::init().with_state(state.clone()))
-        .nest("/api", api_router(state))
+        .nest("/api", api_router(state.clone()))
         // .nest("/swagger", swagger::router())
-        .fallback(static_handler);
+        .fallback(static_handler)
+        .with_state(state);
     // .layer(
     //     ServiceBuilder::new()
     //         .layer(HandleErrorLayer::new(|err: BoxError| async move {
