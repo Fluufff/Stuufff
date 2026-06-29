@@ -188,10 +188,20 @@ pub async fn google_cb(
         format!("{}://{}{}", schema, host_header, params_state.url)
     );
 
-    let mut r = Redirect::temporary(&format!("{}://{}{}", schema, host_header, params_state.url))
-        .into_response();
+    let mut r = format!(
+        "<script>window.location = '{}://{}{}';</script>",
+        schema, host_header, params_state.url
+    )
+    .into_response();
     r.headers_mut().insert(
-        "Set-Cookie",
+        http::header::CONTENT_TYPE,
+        mime_guess::mime::TEXT_HTML_UTF_8
+            .to_string()
+            .parse()
+            .unwrap(),
+    );
+    r.headers_mut().insert(
+        http::header::SET_COOKIE,
         format!(
             "access-token={}; HttpOnly; Max-Age=86400; Path=/; SameSite=Strict",
             token
