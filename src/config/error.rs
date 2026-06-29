@@ -16,8 +16,10 @@ pub enum RuntimeError {
     DBConnectFailure(#[from] DBConnectError),
     #[error(transparent)]
     DBQueryFailure(#[from] diesel::result::Error),
-    // #[error("{0}: {0:?}")]
-    // HttpError(#[from] reqwest::Error),
+    #[error("{0}: {0:?}")]
+    HttpError(#[from] reqwest::Error),
+    #[error("google workspace auth error: {0}")]
+    GoogleAuthError(#[from] yup_oauth2::Error),
     #[error(transparent)]
     ParseError(#[from] ParseError),
     #[error(transparent)]

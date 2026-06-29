@@ -1,9 +1,12 @@
-// pub mod headers;
+pub mod gsuite;
 pub mod routes;
 
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::{
+    collections::HashSet,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
-use crate::commands::api::config::ParsedConfig;
+use crate::commands::api::config::{GoogleRolesConfig, ParsedConfig};
 
 use axum::response::{IntoResponse, Redirect, Response};
 use http::{HeaderMap, StatusCode, header};
@@ -13,6 +16,39 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AuthInfo {
+    #[serde(flatten)]
+    identity: GoogleAuthentication,
+    level: Authorization,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum Authorization {
+    NONE,
+    READER,
+    REQUESTER,
+    EDITOR,
+}
+
+impl Authorization {
+    pub fn from_groups(config: &GoogleRolesConfig, groups: &HashSet<String>) -> Self {
+        if !config.editor_roles.is_disjoint(groups) {
+            return Self::EDITOR;
+        }
+
+        if !config.requester_roles.is_disjoint(groups) {
+            return Self::REQUESTER;
+        }
+
+        if !config.requester_roles.is_disjoint(groups) {
+            return Self::READER;
+        }
+
+        return Self::NONE;
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GoogleAuthentication {
     exp: usize,
     iat: usize,
     sub: String,
@@ -29,24 +65,41 @@ struct CsrfData {
 }
 
 impl AuthInfo {
-    pub fn get(h: &HeaderMap, config: &ParsedConfig) -> Option<Self> {
-        let oauth_cookie = h
+    pub fn get(h: &HeaderMap, config: &ParsedConfig) -> Result<Self, Option<Response>> {
+        let oauth_cookie = match h
             .get(header::COOKIE)
             .and_then(|h| h.to_str().ok())
             .and_then(|h| {
                 h.split(";")
                     .filter_map(|h| h.trim().strip_prefix("access-token="))
                     .next()
-            })?;
+            }) {
+            Some(c) => c,
+            None => return Err(None),
+        };
 
-        let info = jsonwebtoken::decode(
+        let info = match jsonwebtoken::decode(
             &oauth_cookie,
             &DecodingKey::from_secret(config.session_key.as_bytes()),
             &Default::default(),
-        )
-        .ok()?;
+        ) {
+            Ok(info) => info,
+            Err(e) => match e.kind() {
+                jsonwebtoken::errors::ErrorKind::InvalidSignature
+                | jsonwebtoken::errors::ErrorKind::ExpiredSignature => return Err(None),
+                _ => {
+                    return Err(Some(
+                        (
+                            StatusCode::BAD_REQUEST,
+                            format!("invalid authentication: {e}"),
+                        )
+                            .into_response(),
+                    ));
+                }
+            },
+        };
 
-        Some(info.claims)
+        Ok(info.claims)
     }
 
     pub fn get_or_redirect(
@@ -54,8 +107,10 @@ impl AuthInfo {
         config: &ParsedConfig,
         redirect: Option<String>,
     ) -> Result<Self, Response> {
-        if let Some(auth) = Self::get(h, config) {
-            return Ok(auth);
+        match Self::get(h, config) {
+            Ok(auth) => return Ok(auth),
+            Err(Some(resp)) => return Err(resp),
+            _ => {}
         }
 
         match (h.get(header::ACCEPT), h.get(header::HOST)) {

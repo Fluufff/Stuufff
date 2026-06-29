@@ -4,6 +4,7 @@ use axum::response::{IntoResponse, Response};
 use http::{HeaderMap, StatusCode, header};
 use mime_guess::{Mime, mime};
 use rust_embed::{Embed, EmbeddedFile};
+use tracing::debug;
 
 use crate::commands::api::ApiState;
 use crate::commands::api::v1::auth::AuthInfo;
@@ -61,6 +62,7 @@ pub async fn static_handler(
     if path.is_empty() {
         path = "index.html";
     }
+    debug!("serving: {path}");
     match AuthInfo::get_or_redirect(&headers, &state.config, Some(format!("/{path}"))) {
         Ok(_) => StaticFile(path.to_owned()).into_response(),
         Err(r) => r,

@@ -1,4 +1,5 @@
 use core::ops::Deref;
+use std::collections::HashSet;
 
 use rand::RngExt;
 use serde::Deserialize;
@@ -29,9 +30,38 @@ impl Default for OauthConfig {
 }
 
 #[derive(Deserialize, Clone, Default)]
+pub struct AccessConfig {
+    pub google_roles: GoogleRolesConfig,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct GoogleRolesConfig {
+    pub reader_roles: HashSet<String>,
+    pub requester_roles: HashSet<String>,
+    pub editor_roles: HashSet<String>,
+}
+
+impl Default for GoogleRolesConfig {
+    fn default() -> Self {
+        Self {
+            reader_roles: HashSet::from([
+                "04du1wux22l4xt6".into(), // Staff & Volunteers
+            ]),
+            requester_roles: HashSet::from([
+                "00nmf14n0qk8qwh".into(), // Heads and Deputies of Department
+            ]),
+            editor_roles: HashSet::from([
+                "02fk6b3p34i4p1d".into(), // Logistics
+            ]),
+        }
+    }
+}
+
+#[derive(Deserialize, Clone, Default)]
 pub struct Config {
     pub database: DatabaseConfig,
     pub oauth: OauthConfig,
+    pub access: AccessConfig,
 }
 
 impl Config {

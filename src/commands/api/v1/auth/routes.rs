@@ -1,4 +1,4 @@
-use axum::response::{IntoResponse, Redirect, Response};
+use axum::response::{IntoResponse, Response};
 use axum::{
     Json,
     extract::{Query, State},
@@ -7,6 +7,9 @@ use http::{HeaderMap, StatusCode, header};
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use serde::Deserialize;
 use tracing::{error, info};
+
+use crate::commands::api::v1::auth::gsuite::get_groups_for_user;
+use crate::commands::api::v1::auth::{Authorization, GoogleAuthentication};
 
 use super::super::ApiState;
 use super::AuthInfo;
@@ -147,7 +150,8 @@ pub async fn google_cb(
         }
     };
 
-    let id_token = match jsonwebtoken::dangerous::insecure_decode::<AuthInfo>(id_token) {
+    let id_token = match jsonwebtoken::dangerous::insecure_decode::<GoogleAuthentication>(id_token)
+    {
         Ok(t) => t,
         Err(e) => {
             error!("no valid google token payload: {}", e);
@@ -159,9 +163,22 @@ pub async fn google_cb(
         }
     };
 
+    let groups = match get_groups_for_user(&id_token.claims.email).await {
+        Ok(r) => r,
+        Err(e) => {
+            error!("cannot send oauth request: {:?}", e);
+            return (StatusCode::SERVICE_UNAVAILABLE, "bad oauth response").into_response();
+        }
+    };
+
+    let auth = AuthInfo {
+        identity: id_token.claims,
+        level: Authorization::from_groups(&state.config.access.google_roles, &groups),
+    };
+
     let token = jsonwebtoken::encode(
         &Default::default(),
-        &id_token.claims,
+        &auth,
         &EncodingKey::from_secret(state.config.session_key.as_bytes()),
     )
     .unwrap();
@@ -189,8 +206,8 @@ pub async fn google_cb(
 pub async fn logout() -> Response {
     let mut r = "OK".into_response();
     r.headers_mut().insert(
-        "Set-Cookie",
-        "openshift-token=; HttpOnly; Max-Age=0; Path=/; SameSite=Strict"
+        http::header::SET_COOKIE,
+        "access-token=; HttpOnly; Max-Age=0; Path=/; SameSite=Strict"
             .parse()
             .unwrap(),
     );
