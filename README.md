@@ -6,4 +6,5 @@ the Fluufff logistics department running at
 
 ## Quick start
 
-- [development guide](./docs/dev.md)
+- Get to know what components make up the system in the [components overview](./docs/components.md)
+- Contribute to the code with the [development guide](./docs/dev.md)
