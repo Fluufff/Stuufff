@@ -1,4 +1,6 @@
+use axum::response::{IntoResponse, Response};
 use core::{str::FromStr, time::Duration};
+use http::StatusCode;
 use r2d2::PooledConnection;
 use std::fmt::Display;
 
@@ -136,6 +138,14 @@ impl PsqlPool {
             .map_err(RuntimeError::from)?;
         Ok(conn)
     }
+
+    pub fn connection_or_response(
+        &self,
+    ) -> Result<PooledConnection<RotatingConnectionManager<PgConnection>>, Response> {
+        self.connection()
+            .map_err(|_| (StatusCode::SERVICE_UNAVAILABLE, "DB unavailable").into_response())
+    }
+
     #[instrument(err, skip(self))]
     pub fn check_schema_updated(&self) -> Result<(), RuntimeError> {
         let conn = &mut self.connection()?;

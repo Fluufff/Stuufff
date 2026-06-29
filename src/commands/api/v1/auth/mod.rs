@@ -21,9 +21,9 @@ pub struct AuthInfo {
     level: Authorization,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, strum_macros::Display)]
 pub enum Authorization {
-    NONE,
+    NONE = 0,
     READER,
     REQUESTER,
     EDITOR,
@@ -44,6 +44,20 @@ impl Authorization {
         }
 
         return Self::NONE;
+    }
+
+    pub fn is_minimum(&self, min: &Self) -> Option<Response> {
+        if self >= min {
+            None
+        } else {
+            Some(
+                (
+                    StatusCode::FORBIDDEN,
+                    format!("This operation requires at least clearance level {min}"),
+                )
+                    .into_response(),
+            )
+        }
     }
 }
 
@@ -164,5 +178,19 @@ impl AuthInfo {
                 return Err((StatusCode::UNAUTHORIZED, "Authorization is required").into_response());
             }
         };
+    }
+
+    pub fn minimum(
+        h: &HeaderMap,
+        config: &ParsedConfig,
+        min: &Authorization,
+    ) -> Result<Self, Response> {
+        let info = Self::get_or_redirect(h, config, None)?;
+
+        if let Some(resp) = info.level.is_minimum(min) {
+            return Err(resp);
+        }
+
+        Ok(info)
     }
 }

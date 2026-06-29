@@ -34,6 +34,8 @@ serde_urlencoded = "0.7.1"
 jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
 rand = "0.10.1"
 yup-oauth2 = { version = "12.1.2", features = ["service_account"] }
+serde_with = "3.21.0"
+strum_macros = "0.28.0"
 
 [build-dependencies]
 shadow-rs = { version = "2.0.0", features = ["metadata"] }
