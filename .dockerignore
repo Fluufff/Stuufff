@@ -1,0 +1,4 @@
+/target
+/local_secrets
+/psql
+/web/node_modules
