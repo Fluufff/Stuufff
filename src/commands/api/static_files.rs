@@ -1,27 +1,18 @@
+use super::ApiState;
+use super::v1::auth::AuthInfo;
 use axum::extract::State;
 use axum::http::Uri;
 use axum::response::{IntoResponse, Response};
 use http::{HeaderMap, StatusCode, header};
-use mime_guess::{Mime, mime};
-use rust_embed::{Embed, EmbeddedFile};
+use mime_guess::mime;
+use rust_embed::Embed;
 use tracing::debug;
-
-use crate::commands::api::ApiState;
-use crate::commands::api::v1::auth::AuthInfo;
 
 #[derive(Embed)]
 #[folder = "web/build"]
 struct StaticFiles;
 
 pub struct StaticFile<T>(pub T);
-
-fn file(path: &str) -> Option<(EmbeddedFile, Mime)> {
-    let mime = mime_guess::from_path(&path).first_or_octet_stream();
-    file_with_mime(path, mime)
-}
-fn file_with_mime(path: &str, mime: Mime) -> Option<(EmbeddedFile, Mime)> {
-    StaticFiles::get(&path).map(|f| (f, mime))
-}
 
 impl<T> IntoResponse for StaticFile<T>
 where
@@ -30,25 +21,21 @@ where
     fn into_response(self) -> Response {
         let path = self.0.into();
 
-        let static_file =
-            file(&path).or_else(|| file_with_mime(&format!("{}.html", &path), mime::TEXT_HTML));
+        let mime = mime_guess::from_path(&path);
+        let static_file = StaticFiles::get(&path);
 
-        match static_file {
-            Some((file, mime)) => {
-                ([(header::CONTENT_TYPE, mime.as_ref())], file.data).into_response()
-            }
-            None => match (
-                path.split(&['/', '|', ':'])
-                    .last()
-                    .unwrap_or_default()
-                    .contains('.'),
-                file("index.html"),
-            ) {
-                (false, Some((file, mime))) => {
-                    ([(header::CONTENT_TYPE, mime.as_ref())], file.data).into_response()
-                }
-                _ => (StatusCode::NOT_FOUND, "404 Not Found").into_response(),
-            },
+        match (static_file, mime.is_empty(), StaticFiles::get("index.html")) {
+            (Some(static_file), _, _) => (
+                [(header::CONTENT_TYPE, mime.first_or_octet_stream().as_ref())],
+                static_file.data,
+            )
+                .into_response(),
+            (None, true, Some(index_file)) => (
+                [(header::CONTENT_TYPE, mime::TEXT_HTML.as_ref())],
+                index_file.data,
+            )
+                .into_response(),
+            _ => (StatusCode::NOT_FOUND, "404 Not Found").into_response(),
         }
     }
 }
