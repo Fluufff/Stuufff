@@ -13,7 +13,7 @@ chrono = { version = "0.4.43", features = ["serde"]}
 duration-str = "0.21.0"
 shadow-rs = { version = "2.0.0", features = ["metadata"] }
 thiserror = "2.0.18"
-diesel = { version = "2.3.9", features = ["postgres", "serde_json", "time", "r2d2", "chrono"] }
+diesel = { version = "2.3.9", features = ["postgres", "serde_json", "time", "r2d2", "chrono", "uuid"] }
 diesel_migrations = "2.3.2"
 r2d2 = "0.8.10"
 serde = { version = "1.0.218", features = ["derive"] }
@@ -36,6 +36,8 @@ rand = "0.10.1"
 yup-oauth2 = { version = "12.1.2", features = ["service_account"] }
 serde_with = "3.21.0"
 strum_macros = "0.28.0"
+tokio-util = "0.7.18"
+uuid = { version = "1.23.4", features = ["serde", "v7"] }
 
 [build-dependencies]
 shadow-rs = { version = "2.0.0", features = ["metadata"] }

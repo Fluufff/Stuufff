@@ -16,6 +16,8 @@ use std::net::{Ipv6Addr, SocketAddrV6};
 mod static_files;
 mod v1;
 
+use config::DEFAULT_MEDIA_FOLDER;
+
 fn api_router(v1state: ApiState) -> Router<ApiState> {
     Router::new()
         .nest("/v1", v1::init().with_state(v1state.clone()))
@@ -51,6 +53,8 @@ pub struct RunInput {
     config_file: Option<PathBuf>,
     #[command(flatten)]
     db_args: DBArgs,
+    #[arg(long, help = &format!("Media folder\t\tdefault: \"{DEFAULT_MEDIA_FOLDER}\""))]
+    media_folder: Option<String>,
 }
 pub async fn run(input: RunInput) -> Result<(), RuntimeError> {
     let config: ParsedConfig = config::Config::from_input(input).await?.parse().await?;

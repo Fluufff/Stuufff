@@ -23,14 +23,25 @@ where
 
         let mime = mime_guess::from_path(&path);
         let static_file = StaticFiles::get(&path);
+        let static_file_html = StaticFiles::get(&format!("{path}.html"));
 
-        match (static_file, mime.is_empty(), StaticFiles::get("index.html")) {
-            (Some(static_file), _, _) => (
+        match (
+            static_file,
+            static_file_html,
+            mime.is_empty(),
+            StaticFiles::get("index.html"),
+        ) {
+            (Some(static_file), _, _, _) => (
                 [(header::CONTENT_TYPE, mime.first_or_octet_stream().as_ref())],
                 static_file.data,
             )
                 .into_response(),
-            (None, true, Some(index_file)) => (
+            (_, Some(static_file_html), _, _) => (
+                [(header::CONTENT_TYPE, mime::TEXT_HTML.as_ref())],
+                static_file_html.data,
+            )
+                .into_response(),
+            (_, _, true, Some(index_file)) => (
                 [(header::CONTENT_TYPE, mime::TEXT_HTML.as_ref())],
                 index_file.data,
             )

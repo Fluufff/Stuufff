@@ -1,0 +1,28 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+
+@import '@skeletonlabs/skeleton';
+@import '@skeletonlabs/skeleton/optional/presets';
+@import '@skeletonlabs/skeleton/themes/cerberus';
+
+@plugin '@iconify/tailwind4';
+
+@source '../node_modules/@skeletonlabs/skeleton-svelte/dist';
+
+@custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
+
+@theme {
+	--color-severity-danger: var(--color-red-600);
+	--color-severity-noncompliant: var(--color-amber-600);
+	--color-severity-compliant: var(--color-green-600);
+	--color-severity-unknown: var(--color-gray-500);
+}
+
+[data-mode='dark'],
+[data-mode='dark'] {
+	input,
+	textarea,
+	select {
+		color: black;
+	}
+}

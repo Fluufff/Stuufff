@@ -8,6 +8,7 @@ use crate::config::{
 };
 
 pub mod models;
+pub mod models_new;
 pub mod schema;
 
 pub const MIGRATIONS: diesel_migrations::EmbeddedMigrations =

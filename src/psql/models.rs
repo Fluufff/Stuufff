@@ -8,6 +8,55 @@ use crate::psql::schema::*;
 use chrono::DateTime;
 use chrono::offset::Utc;
 use diesel::prelude::*;
+use uuid::Uuid;
+#[derive(
+    Queryable,
+    Selectable,
+    Insertable,
+    AsChangeset,
+    Debug,
+    Clone,
+    serde::Serialize,
+    core::cmp::Eq,
+    core::cmp::PartialEq,
+    core::hash::Hash,
+    Identifiable,
+)]
+#[diesel(primary_key(audit_id))]
+#[diesel(table_name = audit_department_images)]
+pub struct AuditDepartmentImage {
+    pub audit_id: i64,
+    pub operation: String,
+    pub changed_at: Option<DateTime<Utc>>,
+    pub changed_by: Option<String>,
+    pub old_data: Option<serde_json::Value>,
+    pub new_data: Option<serde_json::Value>,
+}
+
+#[derive(
+    Queryable,
+    Selectable,
+    Insertable,
+    AsChangeset,
+    Debug,
+    Clone,
+    serde::Serialize,
+    core::cmp::Eq,
+    core::cmp::PartialEq,
+    core::hash::Hash,
+    Identifiable,
+)]
+#[diesel(primary_key(audit_id))]
+#[diesel(table_name = audit_departments)]
+pub struct AuditDepartment {
+    pub audit_id: i64,
+    pub operation: String,
+    pub changed_at: Option<DateTime<Utc>>,
+    pub changed_by: Option<String>,
+    pub old_data: Option<serde_json::Value>,
+    pub new_data: Option<serde_json::Value>,
+}
+
 #[derive(
     Queryable,
     Selectable,
@@ -24,6 +73,30 @@ use diesel::prelude::*;
 #[diesel(primary_key(audit_id))]
 #[diesel(table_name = audit_labels)]
 pub struct AuditLabel {
+    pub audit_id: i64,
+    pub operation: String,
+    pub changed_at: Option<DateTime<Utc>>,
+    pub changed_by: Option<String>,
+    pub old_data: Option<serde_json::Value>,
+    pub new_data: Option<serde_json::Value>,
+}
+
+#[derive(
+    Queryable,
+    Selectable,
+    Insertable,
+    AsChangeset,
+    Debug,
+    Clone,
+    serde::Serialize,
+    core::cmp::Eq,
+    core::cmp::PartialEq,
+    core::hash::Hash,
+    Identifiable,
+)]
+#[diesel(primary_key(audit_id))]
+#[diesel(table_name = audit_place_images)]
+pub struct AuditPlaceImage {
     pub audit_id: i64,
     pub operation: String,
     pub changed_at: Option<DateTime<Utc>>,
@@ -70,8 +143,56 @@ pub struct AuditPlace {
     Identifiable,
 )]
 #[diesel(primary_key(audit_id))]
+#[diesel(table_name = audit_reserved_places)]
+pub struct AuditReservedPlace {
+    pub audit_id: i64,
+    pub operation: String,
+    pub changed_at: Option<DateTime<Utc>>,
+    pub changed_by: Option<String>,
+    pub old_data: Option<serde_json::Value>,
+    pub new_data: Option<serde_json::Value>,
+}
+
+#[derive(
+    Queryable,
+    Selectable,
+    Insertable,
+    AsChangeset,
+    Debug,
+    Clone,
+    serde::Serialize,
+    core::cmp::Eq,
+    core::cmp::PartialEq,
+    core::hash::Hash,
+    Identifiable,
+)]
+#[diesel(primary_key(audit_id))]
 #[diesel(table_name = audit_reserved_things)]
 pub struct AuditReservedThing {
+    pub audit_id: i64,
+    pub operation: String,
+    pub changed_at: Option<DateTime<Utc>>,
+    pub changed_by: Option<String>,
+    pub old_data: Option<serde_json::Value>,
+    pub new_data: Option<serde_json::Value>,
+}
+
+#[derive(
+    Queryable,
+    Selectable,
+    Insertable,
+    AsChangeset,
+    Debug,
+    Clone,
+    serde::Serialize,
+    core::cmp::Eq,
+    core::cmp::PartialEq,
+    core::hash::Hash,
+    Identifiable,
+)]
+#[diesel(primary_key(audit_id))]
+#[diesel(table_name = audit_thing_images)]
+pub struct AuditThingImage {
     pub audit_id: i64,
     pub operation: String,
     pub changed_at: Option<DateTime<Utc>>,
@@ -132,6 +253,48 @@ pub struct AuditThing {
     Queryable,
     Selectable,
     Insertable,
+    Identifiable,
+    Associations,
+    AsChangeset,
+    Debug,
+    Clone,
+    serde::Serialize,
+    core::cmp::Eq,
+    core::cmp::PartialEq,
+    core::hash::Hash,
+)]
+#[diesel(table_name = department_images)]
+#[diesel(belongs_to(Department))]
+pub struct DepartmentImage {
+    pub department_id: i32,
+    pub id: Uuid,
+}
+
+#[derive(
+    Queryable,
+    Selectable,
+    Insertable,
+    AsChangeset,
+    Identifiable,
+    Debug,
+    Clone,
+    serde::Serialize,
+    serde::Deserialize,
+    core::cmp::Eq,
+    core::cmp::PartialEq,
+    core::hash::Hash,
+)]
+#[diesel(table_name = departments)]
+pub struct Department {
+    pub id: i32,
+    pub name: String,
+    pub main_img: Option<Uuid>,
+}
+
+#[derive(
+    Queryable,
+    Selectable,
+    Insertable,
     AsChangeset,
     Debug,
     Clone,
@@ -143,13 +306,17 @@ pub struct AuditThing {
 #[diesel(table_name = labels)]
 pub struct Label {
     pub id: i32,
+    pub color: Option<String>,
     pub name: String,
+    pub description: Option<String>,
 }
 
 #[derive(
     Queryable,
     Selectable,
     Insertable,
+    Identifiable,
+    Associations,
     AsChangeset,
     Debug,
     Clone,
@@ -158,17 +325,65 @@ pub struct Label {
     core::cmp::PartialEq,
     core::hash::Hash,
 )]
-#[diesel(table_name = places)]
-pub struct Place {
-    pub id: i32,
-    pub in_place: Option<i32>,
-    pub name: String,
+#[diesel(table_name = place_images)]
+#[diesel(belongs_to(Place))]
+pub struct PlaceImage {
+    pub place_id: i32,
+    pub id: Uuid,
 }
 
 #[derive(
     Queryable,
     Selectable,
     Insertable,
+    AsChangeset,
+    Identifiable,
+    Debug,
+    Clone,
+    serde::Serialize,
+    serde::Deserialize,
+    core::cmp::Eq,
+    core::cmp::PartialEq,
+    core::hash::Hash,
+)]
+#[diesel(table_name = places)]
+pub struct Place {
+    pub id: i32,
+    pub in_place: Option<i32>,
+    pub in_department: Option<i32>,
+    pub name: String,
+    pub description: Option<String>,
+    pub main_img: Option<Uuid>,
+}
+
+#[derive(
+    Queryable,
+    Selectable,
+    Insertable,
+    Identifiable,
+    Associations,
+    AsChangeset,
+    Debug,
+    Clone,
+    serde::Serialize,
+    core::cmp::Eq,
+    core::cmp::PartialEq,
+    core::hash::Hash,
+)]
+#[diesel(table_name = reserved_places)]
+#[diesel(belongs_to(Place))]
+pub struct ReservedPlace {
+    pub id: i32,
+    pub place_id: i32,
+    pub reserved_by: String,
+}
+
+#[derive(
+    Queryable,
+    Selectable,
+    Insertable,
+    Identifiable,
+    Associations,
     AsChangeset,
     Debug,
     Clone,
@@ -178,6 +393,7 @@ pub struct Place {
     core::hash::Hash,
 )]
 #[diesel(table_name = reserved_things)]
+#[diesel(belongs_to(Thing))]
 pub struct ReservedThing {
     pub id: i32,
     pub thing_id: i32,
@@ -190,6 +406,29 @@ pub struct ReservedThing {
     Selectable,
     Insertable,
     AsChangeset,
+    Identifiable,
+    Associations,
+    Debug,
+    Clone,
+    serde::Serialize,
+    core::cmp::Eq,
+    core::cmp::PartialEq,
+    core::hash::Hash,
+)]
+#[diesel(table_name = thing_images)]
+#[diesel(belongs_to(Thing))]
+pub struct ThingImage {
+    pub thing_id: i32,
+    pub id: Uuid,
+}
+
+#[derive(
+    Queryable,
+    Selectable,
+    Insertable,
+    Identifiable,
+    AsChangeset,
+    Associations,
     Debug,
     Clone,
     serde::Serialize,
@@ -198,6 +437,8 @@ pub struct ReservedThing {
     core::hash::Hash,
 )]
 #[diesel(table_name = thing_labels)]
+#[diesel(belongs_to(Thing))]
+#[diesel(belongs_to(Label, foreign_key = label_id))]
 pub struct ThingLabel {
     pub id: i32,
     pub thing_id: i32,
@@ -209,9 +450,11 @@ pub struct ThingLabel {
     Selectable,
     Insertable,
     AsChangeset,
+    Identifiable,
     Debug,
     Clone,
     serde::Serialize,
+    serde::Deserialize,
     core::cmp::Eq,
     core::cmp::PartialEq,
     core::hash::Hash,
@@ -222,5 +465,6 @@ pub struct Thing {
     pub count: i32,
     pub in_place: Option<i32>,
     pub name: String,
-    pub description: String,
+    pub description: Option<String>,
+    pub main_img: Option<Uuid>,
 }
