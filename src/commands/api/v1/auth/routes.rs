@@ -171,10 +171,11 @@ pub async fn google_cb(
         }
     };
 
-    let auth = AuthInfo {
+    let mut auth = AuthInfo {
         identity: id_token.claims,
         level: Authorization::from_groups(&state.config.access.google_roles, &groups),
     };
+    auth.identity.exp = auth.identity.iat + 60 * 60 * 24; // 24h token
 
     let token = jsonwebtoken::encode(
         &Default::default(),
