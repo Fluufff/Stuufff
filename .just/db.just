@@ -3,7 +3,7 @@
 db-codegen:
   #!/usr/bin/env bash
   set -euo pipefail
-  export DATABASE_URL=postgres://$(cat local_secrets/psql_user):$(cat local_secrets/psql_pass)@localhost/logistics
+  export DATABASE_URL=postgres://$(cat local_secrets/psql_user):$(cat local_secrets/psql_pass)@localhost/stuufff
   diesel migration run
   diesel_ext --model \
     --add-table-name \
@@ -17,7 +17,7 @@ db-codegen:
 db-revert:
   #!/usr/bin/env bash
   set -euo pipefail
-  export DATABASE_URL=postgres://$(cat local_secrets/psql_user):$(cat local_secrets/psql_pass)@localhost/logistics
+  export DATABASE_URL=postgres://$(cat local_secrets/psql_user):$(cat local_secrets/psql_pass)@localhost/stuufff
   diesel migration revert
 
 # apply all diesel migrations
@@ -32,12 +32,12 @@ run-db:
   if [[ ! -f local_secrets/psql_user ]]; then
     echo "generating postgres credentials"
     mkdir -p local_secrets
-    echo -n "logistics" > local_secrets/psql_user
+    echo -n "stuufff" > local_secrets/psql_user
     openssl rand 60 | openssl base64 -A | sed 's|/|+|g' > local_secrets/psql_pass
   fi
-  docker stop logistics_psql ||:
+  docker stop stuufff_psql ||:
   mkdir -p psql/data
-  docker run -it --rm --name logistics_psql \
+  docker run -it --rm --name stuufff_psql \
     -p 5432:5432 \
     --mount=type=bind,src=$PWD/psql/data,target=/var/lib/postgresql \
     --mount=type=bind,src=$PWD/local_secrets,target=/secrets \
@@ -48,4 +48,4 @@ run-db:
 # get an interactive shell in the locally running db
 [group: 'db']
 db-shell:
-  docker exec -it logistics_psql bash -c 'psql -U $(cat /secrets/psql_user) logistics'
+  docker exec -it stuufff_psql bash -c 'psql -U $(cat /secrets/psql_user) stuufff'

@@ -1,8 +1,8 @@
-# Fluufff logistics inventory system
+# Stüüfff
 
-This is the source code of the inventory application for
-the Fluufff logistics department running at
-[logistics.fluufff.org](https://logistics.fluufff.org).
+This is the source code of Stüüfff, the inventory
+application for the Flüüfff logistics department
+running at [stuufff.fluufff.org](https://stuufff.fluufff.org).
 
 ## Quick start
 

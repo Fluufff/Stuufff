@@ -31,7 +31,7 @@ COPY --from=web-builder /app/build ./web/build
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
     cargo build --release --locked && \
-    mv target/release/logistics-inventory .
+    mv target/release/stuufff .
 
 FROM base-image
 
@@ -39,6 +39,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y libpq5
 
-COPY --from=builder app/logistics-inventory /usr/bin/logistics-inventory
+COPY --from=builder app/stuufff /usr/bin/stuufff
 
-ENTRYPOINT [ "/usr/bin/logistics-inventory" ]
+ENTRYPOINT [ "/usr/bin/stuufff" ]

@@ -16,7 +16,7 @@ async fn main() -> Result<(), &'static str> {
     let mut sigint = signal(SignalKind::interrupt()).unwrap();
     let mut sigterm = signal(SignalKind::terminate()).unwrap();
     select! {
-        result = logistics_inventory::run() => {
+        result = stuufff::run() => {
             if let Err(err) = result {
                 error!("error: {}", err);
                 return Err("exiting due to failure");

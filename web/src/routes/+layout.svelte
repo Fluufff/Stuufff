@@ -42,7 +42,7 @@
 		<span class="icon-[material-symbols--menu-rounded] bg-gray-200 text-[24px]"></span>
 	</button>
 	<div class="flex flex-1 items-center gap-2 text-white">
-		<p class="logo mr-2 text-lg">logistics</p>
+		<p class="logo mr-2 text-lg">Stüüfff</p>
 		{#each breadcrumb as piece, i (i)}
 			<p>{piece}</p>
 			{#if i + 1 != breadcrumb.length}

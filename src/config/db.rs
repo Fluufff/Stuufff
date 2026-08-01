@@ -21,7 +21,7 @@ use super::dynamic_value::DynamicValue;
 /// For use in clap args parsing
 /// ```
 /// use std::time::Duration;
-/// use logistics_inventory::config::shared::parse_duration;
+/// use stuufff::config::shared::parse_duration;
 ///
 /// #[derive(clap::Args)]
 /// pub struct MyArgs {
@@ -52,8 +52,8 @@ pub struct DatabaseConfig {
 
 pub const DB_DEFAULT_HOST: &str = "{{ env('PSQL_HOST') | default('localhost') }}";
 pub const DB_DEFAULT_PORT: &str = "{{ env('PSQL_PORT') | default('5432') }}";
-pub const DB_DEFAULT_NAME: &str = "logistics";
-pub const DB_DEFAULT_USER: &str = "{{ env('PSQL_USER') or file('/etc/secrets/psql/user') or file('local_secrets/psql_user') | default('logistics') }}";
+pub const DB_DEFAULT_NAME: &str = "stuufff";
+pub const DB_DEFAULT_USER: &str = "{{ env('PSQL_USER') or file('/etc/secrets/psql/user') or file('local_secrets/psql_user') | default('stuufff') }}";
 pub const DB_DEFAULT_PASS: &str = "{{ env('PSQL_PASS') or file('/etc/secrets/psql/pass') or file('local_secrets/psql_pass') | required }}";
 
 impl Default for DatabaseConfig {

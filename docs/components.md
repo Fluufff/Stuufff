@@ -1,10 +1,10 @@
 # App components
 
-There are multiple technologies at play that compose the Logistics Inventory app.
+There are multiple technologies at play that compose Stüüfff.
 
 1. PostgreSQL database  
    This holds all the stateful data of the application
-1. Logistics Inventory API  
+1. API  
    This is a backend application written in Rust.  
    A good intro to Rust is the [Rust Handbook](https://doc.rust-lang.org/book/).  
    It uses multiple notable libraries, each with their own purpose
