@@ -38,6 +38,7 @@ impl TryFrom<String> for DynamicValue {
             tpl: Environment::new(),
         };
         s.tpl.add_function("file", fn_file);
+        s.tpl.add_function("filepath", fn_filepath);
         s.tpl.add_function("env", fn_env);
         s.tpl.add_filter("required", filter_required);
         s.tpl.add_template_owned("", value).map_err(|e| {
@@ -87,6 +88,22 @@ pub fn fn_file(args: &[Value]) -> Result<Value, Error> {
     match value.trim() {
         s if s.is_empty() => Ok(Value::UNDEFINED),
         s => Ok(s.into()),
+    }
+}
+pub fn fn_filepath(args: &[Value]) -> Result<Value, Error> {
+    let file_path = args.get(0).ok_or(Error::new(
+        minijinja::ErrorKind::MissingArgument,
+        "file path must be supplied",
+    ))?;
+
+    let fp = file_path.as_str().ok_or(Error::new(
+        minijinja::ErrorKind::CannotDeserialize,
+        "file path must be a string",
+    ))?;
+
+    match fs::exists(fp) {
+        Ok(false) | Err(_) => Ok(Value::UNDEFINED),
+        _ => Ok(file_path.clone()),
     }
 }
 

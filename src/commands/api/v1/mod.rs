@@ -9,6 +9,7 @@ pub fn init() -> Router<ApiState> {
     Router::new()
         .route("/auth/whoami", get(auth::routes::whoami))
         .route("/auth/google_cb", get(auth::routes::google_cb))
+        .route("/auth/local", get(auth::routes::local_cb))
         .route("/auth/logout", get(auth::routes::logout))
         .route(
             "/things",

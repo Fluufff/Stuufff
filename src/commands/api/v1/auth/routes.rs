@@ -1,10 +1,12 @@
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use axum::response::{IntoResponse, Response};
 use axum::{
     Json,
     extract::{Query, State},
 };
 use http::{HeaderMap, StatusCode, header};
-use jsonwebtoken::{DecodingKey, EncodingKey};
+use jsonwebtoken::DecodingKey;
 use serde::Deserialize;
 use tracing::{error, info};
 
@@ -32,25 +34,81 @@ pub async fn whoami(
 }
 
 #[derive(Deserialize, Debug)]
-pub struct CallbackParams {
+pub struct LocalCallbackParams {
+    redirect: Option<String>,
+}
+pub async fn local_cb(
+    State(state): State<ApiState>,
+    Query(params): Query<LocalCallbackParams>,
+) -> Response {
+    match state.config.oauth.as_ref() {
+        None => {}
+        _ => return (StatusCode::BAD_REQUEST, "Oauth is enabled in config").into_response(),
+    };
+
+    let iat = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as usize;
+    let exp = iat + 60 * 60 * 24; // 24h token
+
+    let mut auth = AuthInfo {
+        identity: GoogleAuthentication {
+            iat,
+            exp,
+            sub: "admin".into(),
+            email: "admin@localhost".into(),
+            name: "local admin".into(),
+            picture: "/pic.png".into(),
+            given_name: "local".into(),
+            family_name: "admin".into(),
+        },
+        level: Authorization::EDITOR,
+    };
+    auth.identity.exp = auth.identity.iat + 60 * 60 * 24; // 24h token
+
+    let redirect = params.redirect.unwrap_or("/".into());
+    info!("redirecting after callback: {redirect}");
+
+    let mut r = format!("<script>window.location = '{redirect}';</script>",).into_response();
+
+    auth.set_header(r.headers_mut(), &state.config);
+
+    r.headers_mut().insert(
+        http::header::CONTENT_TYPE,
+        mime_guess::mime::TEXT_HTML_UTF_8
+            .to_string()
+            .parse()
+            .unwrap(),
+    );
+
+    r
+}
+
+#[derive(Deserialize, Debug)]
+pub struct GoogleCallbackParams {
     error: Option<String>,
     code: Option<String>,
     state: Option<String>,
 }
 #[derive(Deserialize, Debug)]
-pub struct CallbackState {
+pub struct GoogleCallbackState {
     csrf: String,
     url: String,
 }
 pub async fn google_cb(
     headers: HeaderMap,
     State(state): State<ApiState>,
-    Query(params): Query<CallbackParams>,
+    Query(params): Query<GoogleCallbackParams>,
 ) -> Response {
+    let oauth_config = match state.config.oauth.as_ref() {
+        Some(c) => c,
+        None => return (StatusCode::BAD_REQUEST, "Oauth is disabled in config").into_response(),
+    };
     let params_state = params
         .state
         .as_deref()
-        .map(serde_urlencoded::from_str::<CallbackState>)
+        .map(serde_urlencoded::from_str::<GoogleCallbackState>)
         .transpose()
         .unwrap_or_default();
 
@@ -94,8 +152,8 @@ pub async fn google_cb(
     let params = [
         ("grant_type", "authorization_code"),
         ("code", &code),
-        ("client_id", &state.config.oauth_client),
-        ("client_secret", &state.config.oauth_secret),
+        ("client_id", &oauth_config.client),
+        ("client_secret", &oauth_config.secret),
         (
             "redirect_uri",
             &format!("{}://{}/api/v1/auth/google_cb", schema, host_header,),
@@ -177,13 +235,6 @@ pub async fn google_cb(
     };
     auth.identity.exp = auth.identity.iat + 60 * 60 * 24; // 24h token
 
-    let token = jsonwebtoken::encode(
-        &Default::default(),
-        &auth,
-        &EncodingKey::from_secret(state.config.session_key.as_bytes()),
-    )
-    .unwrap();
-
     info!(
         "redirecting after callback: {}",
         format!("{}://{}{}", schema, host_header, params_state.url)
@@ -194,21 +245,15 @@ pub async fn google_cb(
         schema, host_header, params_state.url
     )
     .into_response();
+
+    auth.set_header(r.headers_mut(), &state.config);
+
     r.headers_mut().insert(
         http::header::CONTENT_TYPE,
         mime_guess::mime::TEXT_HTML_UTF_8
             .to_string()
             .parse()
             .unwrap(),
-    );
-    r.headers_mut().insert(
-        http::header::SET_COOKIE,
-        format!(
-            "access-token={}; HttpOnly; Max-Age=86400; Path=/; SameSite=Strict",
-            token
-        )
-        .parse()
-        .unwrap(),
     );
 
     r

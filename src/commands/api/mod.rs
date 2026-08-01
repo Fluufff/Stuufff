@@ -55,6 +55,8 @@ pub struct RunInput {
     db_args: DBArgs,
     #[arg(long, help = &format!("Media folder\t\tdefault: \"{DEFAULT_MEDIA_FOLDER}\""))]
     media_folder: Option<String>,
+    #[arg(long, help = "Disable auth (useful for development)")]
+    no_auth: bool,
 }
 pub async fn run(input: RunInput) -> Result<(), RuntimeError> {
     let config: ParsedConfig = config::Config::from_input(input).await?.parse().await?;

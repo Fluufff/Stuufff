@@ -15,16 +15,17 @@ $ just run-db
 
 This will generate local credentials if needed, and (re)-start the database.
 
-## Running the app
+## Setting up the db
 
 ```shell
-$ cargo run api
+$ just db-migrate
 ```
 
 ## (re-)building the Web UI
 
 ```shell
 $ cd web/
+$ npm i
 $ npx vite build
 # or
 $ npx vite build --watch
@@ -34,3 +35,31 @@ The API will serve the web UI, no need to run a server yourself.
 
 A development build of the API code will not slipstream the content of `./web/build` into the binary,
 and instead use the folder as-is, so a `build --watch` works fine.
+
+## Setting up libpq (PostgreSQL) and diesel
+
+```shell
+$ brew install libpq
+$ cargo install diesel_cli --no-default-features --features postgres
+```
+
+## Running the app
+
+```shell
+$ mkdir media
+$ cargo run api --no-auth
+```
+
+### Running the app with Google authentication on
+
+You will need to set up
+- `local_secrets/oauth_client`
+- `local_secrets/oauth_secret`
+- `local_secrets/groups-reader.json`
+
+These file you will need to get from your HoD.
+
+You can then run
+```shell
+$ cargo run api
+```

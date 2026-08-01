@@ -144,35 +144,51 @@ impl AuthInfo {
                     true => "http",
                     false => "https",
                 };
-                let csrf = {
-                    let mut exp = SystemTime::now();
-                    exp += Duration::from_secs(60 * 60);
-                    let exp = exp.duration_since(UNIX_EPOCH).unwrap().as_secs() as usize;
-                    jsonwebtoken::encode(
-                        &Default::default(),
-                        &CsrfData { exp },
-                        &EncodingKey::from_secret(config.session_key.as_bytes()),
-                    )
-                    .unwrap()
+
+                return match config.oauth.as_ref() {
+                    None => {
+                        let mut endpoint =
+                            Url::parse(&format!("{}://{}/api/v1/auth/local", schema, host))
+                                .unwrap();
+                        endpoint
+                            .query_pairs_mut()
+                            .extend_pairs(&[("redirect", redirect.unwrap_or("/".into()))]);
+                        let endpoint = endpoint.to_string();
+                        Err(Redirect::temporary(&endpoint).into_response())
+                    }
+                    Some(oauth_config) => {
+                        let csrf = {
+                            let mut exp = SystemTime::now();
+                            exp += Duration::from_secs(60 * 60);
+                            let exp = exp.duration_since(UNIX_EPOCH).unwrap().as_secs() as usize;
+                            jsonwebtoken::encode(
+                                &Default::default(),
+                                &CsrfData { exp },
+                                &EncodingKey::from_secret(config.session_key.as_bytes()),
+                            )
+                            .unwrap()
+                        };
+
+                        let mut endpoint =
+                            Url::parse("https://accounts.google.com/o/oauth2/v2/auth").unwrap();
+                        endpoint.query_pairs_mut().extend_pairs(&[
+                            ("response_type", "code"),
+                            ("scope", "openid email profile"),
+                            ("client_id", &oauth_config.client),
+                            (
+                                "redirect_uri",
+                                &format!("{}://{}/api/v1/auth/google_cb", schema, host),
+                            ),
+                            (
+                                "state",
+                                &format!("csrf={}&url={}", csrf, redirect.unwrap_or("/".into())),
+                            ),
+                            ("hd", "fluufff.org"),
+                        ]);
+                        let endpoint = endpoint.to_string();
+                        Err(Redirect::temporary(&endpoint).into_response())
+                    }
                 };
-                let mut endpoint =
-                    Url::parse("https://accounts.google.com/o/oauth2/v2/auth").unwrap();
-                endpoint.query_pairs_mut().extend_pairs(&[
-                    ("response_type", "code"),
-                    ("scope", "openid email profile"),
-                    ("client_id", &config.oauth_client),
-                    (
-                        "redirect_uri",
-                        &format!("{}://{}/api/v1/auth/google_cb", schema, host),
-                    ),
-                    (
-                        "state",
-                        &format!("csrf={}&url={}", csrf, redirect.unwrap_or("/".into())),
-                    ),
-                    ("hd", "fluufff.org"),
-                ]);
-                let endpoint = endpoint.to_string();
-                return Err(Redirect::temporary(&endpoint).into_response());
             }
             _ => {
                 return Err((StatusCode::UNAUTHORIZED, "Authorization is required").into_response());
@@ -192,5 +208,25 @@ impl AuthInfo {
         }
 
         Ok(info)
+    }
+
+    pub fn set_header(&self, headers: &mut HeaderMap, config: &ParsedConfig) {
+        let token = jsonwebtoken::encode(
+            &Default::default(),
+            self,
+            &EncodingKey::from_secret(config.session_key.as_bytes()),
+        )
+        .unwrap();
+
+        headers.insert(
+            http::header::SET_COOKIE,
+            format!(
+                "access-token={}; HttpOnly; Max-Age={}; Path=/; SameSite=Strict",
+                token,
+                self.identity.exp - self.identity.iat
+            )
+            .parse()
+            .unwrap(),
+        );
     }
 }
