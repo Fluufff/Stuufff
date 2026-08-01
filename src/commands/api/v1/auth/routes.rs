@@ -59,7 +59,7 @@ pub async fn local_cb(
             sub: "admin".into(),
             email: "admin@localhost".into(),
             name: "local admin".into(),
-            picture: "/pic.png".into(),
+            picture: "/media/local_admin.png".into(),
             given_name: "local".into(),
             family_name: "admin".into(),
         },
