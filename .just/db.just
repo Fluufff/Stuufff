@@ -1,7 +1,7 @@
 # generate db schema and model files based on migration files
 [group: 'db']
 db-codegen:
-  #!/usr/bin/env sh
+  #!/usr/bin/env bash
   set -euo pipefail
   export DATABASE_URL=postgres://$(cat local_secrets/psql_user):$(cat local_secrets/psql_pass)@localhost/logistics
   diesel migration run
@@ -15,7 +15,7 @@ db-codegen:
 # revert all applied diesel migrations
 [group: 'db']
 db-revert:
-  #!/usr/bin/env sh
+  #!/usr/bin/env bash
   set -euo pipefail
   export DATABASE_URL=postgres://$(cat local_secrets/psql_user):$(cat local_secrets/psql_pass)@localhost/logistics
   diesel migration revert
@@ -28,7 +28,7 @@ db-migrate:
 # run the database
 [group: 'db']
 run-db:
-  #!/usr/bin/env sh
+  #!/usr/bin/env bash
   if [[ ! -f local_secrets/psql_user ]]; then
     echo "generating postgres credentials"
     mkdir -p local_secrets

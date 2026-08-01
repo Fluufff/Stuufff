@@ -1,7 +1,7 @@
 # define and push a new release
 [group: 'release']
 release:
-  #!/usr/bin/env sh
+  #!/usr/bin/env bash
   set -euo pipefail
   git pull --tags >/dev/null
   last_tag=$(git describe --tags --abbrev=0)
