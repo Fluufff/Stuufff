@@ -14,6 +14,8 @@ release:
   echo "releasing ${new_tag}"
   sed -i "s|^version =.*$|version = \"${new_tag}\"|" Cargo.toml
   sed -i "s|^version =.*$|version = \"${new_tag}\"|" macros/Cargo.toml
+  sed -i "s|^version:.*$|version: \"${new_tag}\"|" helm/Chart.yaml
+  sed -i "s|^appVersion:.*$|appVersion: \"${new_tag}\"|" helm/Chart.yaml
   cargo update
   sed -i "s|^	\"version\":.*$|	\"version\": \"${new_tag}\",|" web/package.json
   (cd web && npm i)

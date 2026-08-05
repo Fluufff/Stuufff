@@ -1,0 +1,60 @@
+images:
+  postgres: docker.io/postgres:18.4
+  stuufff: ghcr.io/fluufff/stuufff:stable
+
+resources:
+  postgres:
+    # startup peak: 0.09
+    # peak: 0.015
+    cpu: 10m
+    # peak: 134M
+    memory: 300Mi
+  stuufff:
+    cpu: 100m
+    memory: 1Gi
+
+podSecurityOpts:
+  postgres:
+    hostPID: false
+    hostIPC: false
+    automountServiceAccountToken: false
+    hostNetwork: false
+  stuufff:
+    hostPID: false
+    hostIPC: false
+    automountServiceAccountToken: false
+    hostNetwork: false
+
+podSecurityContext:
+  postgres:
+    runAsNonRoot: true
+    runAsUser: 1050
+    fsGroup: 1050
+    fsGroupChangePolicy: OnRootMismatch
+    # runAsGroup: 1050
+    # supplementalGroups: [1050]
+  stuufff:
+    runAsNonRoot: true
+    runAsUser: 1050
+    fsGroup: 1050
+    fsGroupChangePolicy: OnRootMismatch
+    # runAsGroup: 1050
+    # supplementalGroups: [1050]
+
+containerSecurityContext:
+  postgres:
+    privileged: false
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop: ["ALL"]
+  stuufff:
+    privileged: false
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop: ["ALL"]
