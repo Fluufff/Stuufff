@@ -56,13 +56,13 @@ pub async fn static_handler(
     headers: HeaderMap,
     State(state): State<ApiState>,
 ) -> Response {
-    let mut path = path.path().trim_start_matches('/');
-    if path.is_empty() {
-        path = "index.html";
-    }
-    debug!("serving: {path}");
-    match AuthInfo::get_or_redirect(&headers, &state.config, Some(format!("/{path}"))) {
-        Ok(_) => StaticFile(path.to_owned()).into_response(),
+    let (http_path, fs_path) = match path.path().trim_start_matches('/') {
+        "" => ("/".to_owned(), "index.html".to_owned()),
+        path => (format!("/{path}"), path.to_owned()),
+    };
+    debug!("serving: {http_path}");
+    match AuthInfo::get_or_redirect(&headers, &state.config, Some(http_path)) {
+        Ok(_) => StaticFile(fs_path).into_response(),
         Err(r) => r,
     }
 }
