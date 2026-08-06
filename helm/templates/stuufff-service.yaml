@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    {{- include "stuufff.labels" . | nindent 4 }}
+    app.kubernetes.io/name: stuufff
+    app.kubernetes.io/component: stuufff
+  name: stuufff
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: stuufff
+    app.kubernetes.io/component: stuufff
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 3000

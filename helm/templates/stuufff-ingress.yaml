@@ -1,0 +1,17 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  labels:
+    {{- include "stuufff.labels" . | nindent 4 }}
+    app.kubernetes.io/component: stuufff
+  name: stuufff
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`stuufff.next.fluufff.org`)
+      services:
+        - kind: Service
+          name: stuufff
+          port: http
