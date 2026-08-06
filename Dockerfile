@@ -37,7 +37,9 @@ FROM base-image
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && apt-get install -y libpq5
+    apt-get update && apt-get install -y \
+        libpq5 \
+        ca-certificates
 
 COPY --from=builder app/stuufff /usr/bin/stuufff
 
