@@ -39,7 +39,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y \
         libpq5 \
-        ca-certificates
+        ca-certificates \
+        curl
 
 COPY --from=builder app/stuufff /usr/bin/stuufff
 
