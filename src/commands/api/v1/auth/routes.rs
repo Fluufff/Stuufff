@@ -221,7 +221,7 @@ pub async fn google_cb(
         }
     };
 
-    let groups = match get_groups_for_user(&id_token.claims.email).await {
+    let groups = match get_groups_for_user(oauth_config, &id_token.claims.email).await {
         Ok(r) => r,
         Err(e) => {
             error!("cannot send oauth request: {:?}", e);

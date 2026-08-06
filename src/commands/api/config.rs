@@ -23,7 +23,7 @@ pub struct OauthConfig {
 
 pub const DEFAULT_OAUTH_CLIENT: &str = "{{ (env('OAUTH_CLIENT') or file('/etc/secrets/integrations/oauth_client') or file('local_secrets/oauth_client')) | required }}";
 pub const DEFAULT_OAUTH_SECRET: &str = "{{ (env('OAUTH_SECRET') or file('/etc/secrets/integrations/oauth_secret') or file('local_secrets/oauth_secret')) | required }}";
-pub const DEFAULT_READER_KEY: &str = "{{ (env('GOOGLE_READER_KEY_FILE') or filepath('/etc/secrets/integrations/oauth_secret') or filepath('local_secrets/oauth_secret')) | required }}";
+pub const DEFAULT_READER_KEY: &str = "{{ (env('GOOGLE_READER_KEY_FILE') or filepath('/etc/secrets/integrations/google_reader.json') or filepath('local_secrets/google_reader.json')) | required }}";
 impl Default for OauthConfig {
     fn default() -> Self {
         Self {
@@ -93,6 +93,17 @@ impl Config {
             config.media_folder = DynamicValue::new_owned(media_folder)?;
         }
         config.oauth.enabled = !input.no_auth;
+        if config.oauth.enabled {
+            if let Some(client) = input.oauth_client_id {
+                config.oauth.client = DynamicValue::new_owned(client)?;
+            }
+            if let Some(secret) = input.oauth_client_secret {
+                config.oauth.secret = DynamicValue::new_owned(secret)?;
+            }
+            if let Some(reader_sa_key) = input.oauth_reader_sa_key {
+                config.oauth.reader_sa_key = DynamicValue::new_owned(reader_sa_key)?;
+            }
+        }
         Ok(config)
     }
 

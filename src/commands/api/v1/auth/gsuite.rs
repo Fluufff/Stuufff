@@ -1,4 +1,4 @@
-use crate::config::error::RuntimeError;
+use crate::{commands::api::config::ParsedOauthConfig, config::error::RuntimeError};
 use serde::Deserialize;
 use std::collections::HashSet;
 use yup_oauth2::{ServiceAccountAuthenticator, read_service_account_key};
@@ -21,8 +21,11 @@ pub struct WorkspaceGroupsEntry {
     // nonEditableAliases: Vec<String>,
 }
 
-pub async fn get_groups_for_user(email: &str) -> Result<HashSet<String>, RuntimeError> {
-    let key = read_service_account_key("local_secrets/groups-reader.json").await?;
+pub async fn get_groups_for_user(
+    config: &ParsedOauthConfig,
+    email: &str,
+) -> Result<HashSet<String>, RuntimeError> {
+    let key = read_service_account_key(&config.google_reader_key_file).await?;
 
     let auth = ServiceAccountAuthenticator::builder(key)
         .subject("juravenator@fluufff.org")

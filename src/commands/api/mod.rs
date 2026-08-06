@@ -16,7 +16,9 @@ use std::net::{Ipv6Addr, SocketAddrV6};
 mod static_files;
 mod v1;
 
-use config::DEFAULT_MEDIA_FOLDER;
+use config::{
+    DEFAULT_MEDIA_FOLDER, DEFAULT_OAUTH_CLIENT, DEFAULT_OAUTH_SECRET, DEFAULT_READER_KEY,
+};
 
 fn api_router(v1state: ApiState) -> Router<ApiState> {
     Router::new()
@@ -53,10 +55,16 @@ pub struct RunInput {
     config_file: Option<PathBuf>,
     #[command(flatten)]
     db_args: DBArgs,
-    #[arg(long, help = &format!("Media folder\t\tdefault: \"{DEFAULT_MEDIA_FOLDER}\""))]
+    #[arg(long, help = &format!("Media folder\t\t\tdefault: \"{DEFAULT_MEDIA_FOLDER}\""))]
     media_folder: Option<String>,
-    #[arg(long, help = "Disable auth (useful for development)")]
+    #[arg(long, help = "Disable OAuth")]
     no_auth: bool,
+    #[arg(long, help = &format!("OAuth client ID\t\tdefault: \"{DEFAULT_OAUTH_CLIENT}\""))]
+    oauth_client_id: Option<String>,
+    #[arg(long, help = &format!("OAuth client secret\t\tdefault: \"{DEFAULT_OAUTH_SECRET}\""))]
+    oauth_client_secret: Option<String>,
+    #[arg(long, help = &format!("Google workspace sa key file\tdefault: \"{DEFAULT_READER_KEY}\""))]
+    oauth_reader_sa_key: Option<String>,
 }
 pub async fn run(input: RunInput) -> Result<(), RuntimeError> {
     let config: ParsedConfig = config::Config::from_input(input).await?.parse().await?;

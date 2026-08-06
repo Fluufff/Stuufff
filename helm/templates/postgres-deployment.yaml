@@ -35,10 +35,6 @@ spec:
         emptyDir: {}
       - name: run
         emptyDir: {}
-      hostPID: false
-      hostIPC: false
-      automountServiceAccountToken: false
-      hostNetwork: false
       {{- toYaml .Values.podSecurityOpts.postgres | nindent 6 }}
       securityContext:
         {{- toYaml .Values.podSecurityContext.postgres | nindent 8 }}

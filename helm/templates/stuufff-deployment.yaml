@@ -28,6 +28,10 @@ spec:
         secret:
           secretName: postgres-admin
           defaultMode: 0440
+      - name: integrations
+        secret:
+          secretName: integrations
+          defaultMode: 0440
       - name: media
         persistentVolumeClaim:
           claimName: media
@@ -35,16 +39,13 @@ spec:
         emptyDir: {}
       - name: run
         emptyDir: {}
-      hostPID: false
-      hostIPC: false
-      automountServiceAccountToken: false
-      hostNetwork: false
       {{- toYaml .Values.podSecurityOpts.stuufff | nindent 6 }}
       securityContext:
         {{- toYaml .Values.podSecurityContext.stuufff | nindent 8 }}
       initContainers:
       - name: init-stuufff
         image: {{ .Values.images.stuufff }}
+        imagePullPolicy: Always
         command: ["stuufff", "db", "migrate"]
         env:
         - name: PSQL_HOST
@@ -53,16 +54,20 @@ spec:
         - name: postgres-admin
           mountPath: /etc/secrets/psql
           readOnly: true
-        - name: media
-          mountPath: /var/lib/stuufff/media
       containers:
       - name: stuufff
         image: {{ .Values.images.stuufff }}
+        imagePullPolicy: Always
         args: ["api"]
         volumeMounts:
         - name: postgres-admin
           mountPath: /etc/secrets/psql
           readOnly: true
+        - name: integrations
+          mountPath: /etc/secrets/integrations
+          readOnly: true
+        - name: media
+          mountPath: /var/lib/stuufff/media
         env:
         - name: PSQL_HOST
           value: postgres
