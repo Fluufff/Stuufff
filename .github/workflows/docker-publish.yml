@@ -2,8 +2,8 @@ name: Build container
 
 on:
   push:
-    branches: ['stable']
-    tags: ['*']
+    branches: ["stable"]
+    tags: ["*"]
 
 env:
   REGISTRY: ghcr.io
@@ -29,8 +29,6 @@ jobs:
       - name: Install cosign
         if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
-        with:
-          cosign-release: 'v2.2.4'
 
       # Set up BuildKit Docker container builder to be able to build
       # multi-platform images and export cache
