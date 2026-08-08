@@ -7,7 +7,10 @@
 		type Thing,
 		updateThing,
 		departments,
-		newLabel
+		newLabel,
+
+		FetchError
+
 	} from '$lib/data';
 
 	let editLabels = $state(false);
@@ -30,6 +33,7 @@
 		value: null as Thing | null,
 		original: null as Thing | null,
 		error: null as string | null,
+		errorCode: null as number | null,
 		id: null as number | null
 	});
 
@@ -50,6 +54,12 @@
 		fetchThing(id).then((resp) => {
 			thing.value = resp;
 			thing.original = structuredClone(resp);
+		}).catch(err => {
+			if (err instanceof FetchError) {
+				thing.errorCode = err.code;
+			}
+			console.error('failed to fetch thing', {err});
+			thing.error = err.message;
 		});
 	});
 
@@ -91,7 +101,11 @@
 </script>
 
 <section class="grid-area max-w-6xl flex flex-col m-4 gap-2">
-	{#if thing.error}
+	{#if thing.errorCode == 404}
+		<p>Thing not found</p>
+	{:else if thing.errorCode == 410}
+		<p>Thing was deleted</p>
+	{:else if thing.error}
 		<p>loading failed: {thing.error}</p>
 	{:else if thing.value == null || thing.original == null}
 		<p>loading thing {page.params.id}</p>
@@ -123,6 +137,22 @@
 						Add image
 						<input type="file" accept="image/*" hidden multiple onchange={saveImages} />
 					</label>
+
+					<button
+						aria-label="delete"
+						onclick={() => {
+							const confirmed = confirm('Are you sure you want to delete this thing? This action cannot be undone.');
+							if (thing.value != null && confirmed) {
+								fetch(`/api/v1/things/${thing.value.id}`, { method: 'DELETE' }).then(() =>
+									history.back()
+								);
+							}
+						}}
+						class="bg-red-800 hover:bg-red-700 rounded-md p-2 flex gap-2 items-center"
+						disabled={thing.value == null}>
+						<span class="icon-[material-symbols--delete] text-[16px]"></span>
+						<span>Delete</span>
+					</button>
 				</section>
 				<section class="images flex gap-2 flex-nowrap">
 					{#each thing.value.image_ids as image_id (image_id)}

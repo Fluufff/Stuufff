@@ -17,7 +17,9 @@ pub fn init() -> Router<ApiState> {
         )
         .route(
             "/things/{thing_id}",
-            get(routes::things::get_thing).put(routes::things::update_thing),
+            get(routes::things::get_thing)
+                .put(routes::things::update_thing)
+                .delete(routes::things::delete_thing),
         )
         .route(
             "/things/{thing_id}/images",
@@ -34,7 +36,9 @@ pub fn init() -> Router<ApiState> {
         )
         .route(
             "/places/{place_id}",
-            get(routes::places::get_place).put(routes::places::update_place),
+            get(routes::places::get_place)
+                .put(routes::places::update_place)
+                .delete(routes::places::delete_place),
         )
         .route(
             "/places/{place_id}/images",
@@ -51,7 +55,9 @@ pub fn init() -> Router<ApiState> {
         )
         .route(
             "/departments/{dep_id}",
-            get(routes::departments::get_department).put(routes::departments::update_department),
+            get(routes::departments::get_department)
+                .put(routes::departments::update_department)
+                .delete(routes::departments::delete_department),
         )
         .route(
             "/departments/{dep_id}/images",

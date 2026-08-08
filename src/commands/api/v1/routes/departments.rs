@@ -9,6 +9,7 @@ use axum::{
     extract::{Path, Request, State},
     response::{IntoResponse, Response},
 };
+use diesel::dsl::max;
 use diesel::{
     BelongingToDsl, BoolExpressionMethods, ExpressionMethods, GroupedBy, OptionalExtension,
     QueryDsl, RunQueryDsl, SelectableHelper, insert_into,
@@ -98,13 +99,29 @@ pub async fn get_department(
         Err(resp) => return resp,
     };
 
+    let max_id: i32 = match schema::departments::table
+        .select(max(schema::departments::id))
+        .get_result(&mut db)
+    {
+        Ok(Some(max_id)) => max_id,
+        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
+        Err(e) => {
+            error!(err = e.to_string(), "failed to get department");
+            return (StatusCode::SERVICE_UNAVAILABLE, "db query failed").into_response();
+        }
+    };
+
+    if max_id < id {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+
     let department = match schema::departments::table
         .find(&id)
         .first::<models::Department>(&mut db)
         .optional()
     {
         Ok(Some(department)) => department,
-        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => return StatusCode::GONE.into_response(),
         Err(e) => {
             error!(err = e.to_string(), "failed to get department");
             return (StatusCode::SERVICE_UNAVAILABLE, "db query failed").into_response();
@@ -190,6 +207,31 @@ pub async fn update_department(
 
     match diesel::update(schema::departments::table.filter(schema::departments::id.eq(id)))
         .set(department.department)
+        .execute(&mut db)
+    {
+        Err(e) => return (StatusCode::SERVICE_UNAVAILABLE, format!("{e}")).into_response(),
+        _ => {}
+    };
+
+    StatusCode::OK.into_response()
+}
+
+pub async fn delete_department(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path(id): Path<i32>,
+) -> Response {
+    let _auth = match AuthInfo::minimum(&headers, &state.config, &Authorization::EDITOR) {
+        Ok(auth) => auth,
+        Err(resp) => return resp,
+    };
+
+    let mut db = match state.config.psql_pool.connection_or_response() {
+        Ok(conn) => conn,
+        Err(resp) => return resp,
+    };
+
+    match diesel::delete(schema::departments::table.filter(schema::departments::id.eq(id)))
         .execute(&mut db)
     {
         Err(e) => return (StatusCode::SERVICE_UNAVAILABLE, format!("{e}")).into_response(),

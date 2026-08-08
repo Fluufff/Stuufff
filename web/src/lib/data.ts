@@ -43,10 +43,19 @@ export interface Department {
 	image_ids: string[];
 }
 
+export class FetchError extends Error {
+	code: number;
+
+	constructor(code: number, message: string) {
+		super(message);
+		this.code = code;
+	}
+}
+
 const fetchPlaces = async () => {
 	const resp = await fetch(`/api/v1/places`);
 	if (!resp.ok) {
-		throw new Error('Failed to fetch places');
+		throw new FetchError(resp.status, 'Failed to fetch places');
 	}
 
 	const places: Place[] = await resp.json();
@@ -66,7 +75,7 @@ export const places = fetchPlaces().then((places) =>
 const fetchDepartments = async () => {
 	const resp = await fetch(`/api/v1/departments`);
 	if (!resp.ok) {
-		throw new Error('Failed to fetch departments');
+		throw new FetchError(resp.status, 'Failed to fetch departments');
 	}
 
 	const departments: Department[] = await resp.json();
@@ -86,7 +95,7 @@ export const departments = fetchDepartments().then((departments) =>
 const fetchLabels = async () => {
 	const resp = await fetch(`/api/v1/labels`);
 	if (!resp.ok) {
-		throw new Error('Failed to fetch labels');
+		throw new FetchError(resp.status, 'Failed to fetch labels');
 	}
 
 	const labels: Label[] = await resp.json();
@@ -113,7 +122,7 @@ export async function newLabel(name: string): Promise<Label> {
 	});
 
 	if (!response.ok) {
-		throw new Error('Failed to create thing');
+		throw new FetchError(response.status, 'Failed to create label');
 	}
 
 	const label: Label = await response.json();
@@ -127,7 +136,7 @@ export async function newLabel(name: string): Promise<Label> {
 const fetchThings = async () => {
 	const resp = await fetch(`/api/v1/things`);
 	if (!resp.ok) {
-		throw new Error('Failed to fetch things');
+		throw new FetchError(resp.status, 'Failed to fetch things');
 	}
 
 	const things: Thing[] = await resp.json();
@@ -139,7 +148,7 @@ export const things = fetchThings();
 export const fetchThing = async (id: number) => {
 	const resp = await fetch(`/api/v1/things/${id}`);
 	if (!resp.ok) {
-		throw new Error('Failed to fetch thing');
+		throw new FetchError(resp.status, resp.statusText || 'Failed to fetch thing');
 	}
 
 	const things: Thing = await resp.json();
@@ -157,7 +166,7 @@ export async function updateThing(thing: Thing): Promise<void> {
 	});
 
 	if (!response.ok) {
-		throw new Error('Failed to update thing');
+		throw new FetchError(response.status, 'Failed to update thing');
 	}
 }
 
@@ -177,7 +186,7 @@ export async function newThing(thing: {
 	});
 
 	if (!response.ok) {
-		throw new Error('Failed to create thing');
+		throw new FetchError(response.status, 'Failed to create thing');
 	}
 
 	return response.json();
@@ -198,7 +207,7 @@ export async function newPlace(place: {
 	});
 
 	if (!response.ok) {
-		throw new Error('Failed to create thing');
+		throw new FetchError(response.status, 'Failed to create place');
 	}
 
 	return response.json();

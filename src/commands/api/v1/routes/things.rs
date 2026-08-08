@@ -9,6 +9,7 @@ use axum::{
     extract::{Path, Query, Request, State},
     response::{IntoResponse, Response},
 };
+use diesel::dsl::max;
 use diesel::{
     BelongingToDsl, BoolExpressionMethods, ExpressionMethods, GroupedBy, OptionalExtension,
     PgTextExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper, insert_into,
@@ -196,13 +197,29 @@ pub async fn get_thing(
         Err(resp) => return resp,
     };
 
+    let max_id: i32 = match schema::things::table
+        .select(max(schema::things::id))
+        .get_result(&mut db)
+    {
+        Ok(Some(max_id)) => max_id,
+        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
+        Err(e) => {
+            error!(err = e.to_string(), "failed to get thing");
+            return (StatusCode::SERVICE_UNAVAILABLE, "db query failed").into_response();
+        }
+    };
+
+    if max_id < id {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+
     let thing = match schema::things::table
         .find(&id)
         .first::<models::Thing>(&mut db)
         .optional()
     {
         Ok(Some(thing)) => thing,
-        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => return StatusCode::GONE.into_response(),
         Err(e) => {
             error!(err = e.to_string(), "failed to get thing");
             return (StatusCode::SERVICE_UNAVAILABLE, "db query failed").into_response();
@@ -357,6 +374,31 @@ pub async fn update_thing(
                 })
                 .collect::<Vec<_>>(),
         )
+        .execute(&mut db)
+    {
+        Err(e) => return (StatusCode::SERVICE_UNAVAILABLE, format!("{e}")).into_response(),
+        _ => {}
+    };
+
+    StatusCode::OK.into_response()
+}
+
+pub async fn delete_thing(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path(thing_id): Path<i32>,
+) -> Response {
+    let _auth = match AuthInfo::minimum(&headers, &state.config, &Authorization::EDITOR) {
+        Ok(auth) => auth,
+        Err(resp) => return resp,
+    };
+
+    let mut db = match state.config.psql_pool.connection_or_response() {
+        Ok(conn) => conn,
+        Err(resp) => return resp,
+    };
+
+    match diesel::delete(schema::things::table.filter(schema::things::id.eq(thing_id)))
         .execute(&mut db)
     {
         Err(e) => return (StatusCode::SERVICE_UNAVAILABLE, format!("{e}")).into_response(),
