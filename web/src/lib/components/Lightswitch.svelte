@@ -26,10 +26,18 @@
 </svelte:head>
 
 <Switch {checked} {onCheckedChange}>
-	{#snippet inactiveChild()}
-		<span class="icon-[material-symbols--dark-mode-outline] text-[12px]"></span>
-	{/snippet}
-	{#snippet activeChild()}
-		<span class="icon-[material-symbols--light-mode-outline] text-[12px]"></span>
-	{/snippet}
+	<Switch.Control>
+		<Switch.Thumb>
+			<Switch.Context>
+				{#snippet children(switch_)}
+					{#if switch_().checked}
+						<span class="icon-[material-symbols--light-mode-outline] text-[12px]"></span>
+					{:else}
+						<span class="icon-[material-symbols--dark-mode-outline] text-[12px]"></span>
+					{/if}
+				{/snippet}
+			</Switch.Context>
+		</Switch.Thumb>
+	</Switch.Control>
+	<Switch.HiddenInput />
 </Switch>
