@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use axum_swagger_ui::swagger_ui;
 use tokio::select;
 use tracing::info;
 
@@ -7,7 +8,11 @@ use crate::{cli::DBArgs, config::error::RuntimeError};
 use config::ParsedConfig;
 
 mod config;
-use axum::{Router, response::IntoResponse};
+use axum::{
+    Router,
+    response::{Html, IntoResponse},
+    routing::get,
+};
 use http::{StatusCode, Uri, header};
 use mime_guess::mime;
 use static_files::static_handler;
@@ -75,7 +80,11 @@ pub async fn run(input: RunInput) -> Result<(), RuntimeError> {
     let router = Router::new()
         // .nest("/z", z::init().with_state(state.clone()))
         .nest("/api", api_router(state.clone()))
-        // .nest("/swagger", swagger::router())
+        .route(
+            "/openapi",
+            get(|| async { include_str!("../../../openapi.yaml") }),
+        )
+        .route("/swagger", get(|| async { Html(swagger_ui("/openapi")) }))
         .fallback(static_handler)
         .with_state(state);
     // .layer(

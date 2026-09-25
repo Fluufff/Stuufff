@@ -1,0 +1,865 @@
+openapi: "3.0.3"
+info:
+  title: Stuufff API
+  description: |
+    REST API for managing things, places, departments, and labels.
+    Powered by Axum with Diesel ORM on PostgreSQL.
+  version: 0.1.0
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development server
+  - url: https://stuufff.next.fluufff.org/api/v1
+    description: Test server
+
+tags:
+  - name: auth
+    description: Authentication endpoints
+  - name: things
+    description: Inventory items (things)
+  - name: places
+    description: Locations where things can be stored
+  - name: departments
+    description: Organizational departments
+  - name: labels
+    description: Color-coded tags for things
+
+paths:
+  /auth/whoami:
+    get:
+      tags: [auth]
+      summary: Get current user info (redirects if not authenticated)
+      operationId: whoami
+      responses:
+        "302":
+          description: Redirect to authentication provider
+        "401":
+          description: Unauthorized — no valid session cookie
+        "200":
+          description: Returns the current user's Google identity and authorization level
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthInfo"
+
+  /auth/google_cb:
+    get:
+      tags: [auth]
+      summary: Google OAuth callback
+      description: >
+        Handles the redirect from Google OAuth after user consent.
+        Exchanges authorization code for token, sets session cookie.
+      parameters:
+        - name: error
+          in: query
+          schema: { type: string }
+        - name: code
+          in: query
+          schema: { type: string }
+        - name: state
+          in: query
+          schema: { type: string }
+      responses:
+        "302":
+          description: Redirect to original URL after successful login
+        "400":
+          description: Bad request — missing code or invalid CSRF state
+        "503":
+          description: OAuth provider unavailable
+
+  /auth/local:
+    get:
+      tags: [auth]
+      summary: Local (passwordless) auth callback
+      description: >
+        For development when OAuth is disabled. Creates an admin session.
+      parameters:
+        - name: redirect
+          in: query
+          schema: { type: string }
+      responses:
+        "302":
+          description: Redirect to the specified URL with session cookie set
+
+  /auth/logout:
+    get:
+      tags: [auth]
+      summary: Logout — clear session cookie
+      responses:
+        "200":
+          description: OK
+
+  /things:
+    get:
+      tags: [things]
+      summary: List all things (filtered)
+      operationId: listThings
+      parameters:
+        - name: search
+          in: query
+          description: Fuzzy match on name or description (ILIKE '%search%')
+          schema: { type: string }
+        - name: place
+          in: query
+          description: >
+            Filter by place ID. Use 0 to get things with no assigned place.
+          schema: { type: integer, format: int32 }
+      responses:
+        "200":
+          description: List of Things with labels and reservations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Thing"
+        "401":
+          description: Unauthorized
+        "503":
+          description: Database unavailable
+
+    post:
+      tags: [things]
+      summary: Create a new thing
+      operationId: addThing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewThing"
+            example:
+              name: "Example Screw"
+              description: "M6 x 20mm hex socket cap screw"
+              count: 1
+              in_place: 42
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThingIdResponse"
+        "401":
+          description: Unauthorized — EDITOR role required
+
+  /things/{thing_id}:
+    get:
+      tags: [things]
+      summary: Get a single thing (detailed)
+      operationId: getThing
+      parameters:
+        - name: thing_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+      responses:
+        "200":
+          description: >
+            The complete Thing detail including labels, images, and
+            reservations.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThingDetailed"
+        "404":
+          description: Not found (or gone)
+
+    put:
+      tags: [things]
+      summary: Update an existing thing
+      operationId: updateThing
+      description: >
+        Full replace of the thing. Labels are diffed and added/removed as needed.
+      parameters:
+        - name: thing_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Thing"
+      responses:
+        "200":
+          description: Updated
+        "400":
+          description: Bad request — path ID must match body ID
+        "401":
+          description: Unauthorized — EDITOR role required
+
+    delete:
+      tags: [things]
+      summary: Delete a thing
+      operationId: deleteThing
+      parameters:
+        - name: thing_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+      responses:
+        "200":
+          description: Deleted
+        "401":
+          description: Unauthorized — EDITOR role required
+
+  /things/{thing_id}/images:
+    get:
+      tags: [things]
+      summary: List images for a thing
+      operationId: listThingImages
+      parameters:
+        - name: thing_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+      responses:
+        "200":
+          description: Array of image records for the thing
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ThingImage"
+
+    post:
+      tags: [things]
+      summary: Upload an image for a thing
+      operationId: addThingImage
+      description: >
+        Send the raw binary file as request body. The API saves it to disk,
+        registers it in thing_images, and sets it as main_img if no main
+        image was previously set.
+      parameters:
+        - name: thing_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: Image uploaded successfully
+        "401":
+          description: Unauthorized — EDITOR role required
+
+  /things/{thing_id}/images/{img_id}:
+    get:
+      tags: [things]
+      summary: Retrieve an image file for a thing
+      operationId: getThingImage
+      parameters:
+        - name: thing_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+        - name: img_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: The image file (binary stream)
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+    delete:
+      tags: [things]
+      summary: Delete an image record for a thing
+      operationId: deleteThingImage
+      parameters:
+        - name: thing_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+        - name: img_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Image record deleted from DB (file remains on disk)
+
+  /places:
+    get:
+      tags: [places]
+      summary: List all places
+      operationId: listPlaces
+      responses:
+        "200":
+          description: List of Places with images and reservations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Place"
+
+    post:
+      tags: [places]
+      summary: Create a new place
+      operationId: addPlace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewPlace"
+            example:
+              name: "Main Warehouse"
+              description: "Primary storage facility"
+              in_place: null
+              in_department: 1
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThingIdResponse"
+        "401":
+          description: Unauthorized — EDITOR role required
+
+  /places/{place_id}:
+    get:
+      tags: [places]
+      summary: Get a single place (detailed)
+      operationId: getPlace
+      parameters:
+        - name: place_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+      responses:
+        "200":
+          description: Place details with images and reservations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Place"
+
+    put:
+      tags: [places]
+      summary: Update an existing place
+      operationId: updatePlace
+      parameters:
+        - name: place_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Place"
+      responses:
+        "200":
+          description: Updated
+
+    delete:
+      tags: [places]
+      summary: Delete a place
+      operationId: deletePlace
+      parameters:
+        - name: place_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+      responses:
+        "200":
+          description: Deleted
+
+  /places/{place_id}/images:
+    get:
+      tags: [places]
+      summary: List images for a place
+      operationId: listPlaceImages
+      parameters:
+        - name: place_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+      responses:
+        "200":
+          description: Array of image records for the place
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlaceImage"
+
+    post:
+      tags: [places]
+      summary: Upload an image for a place
+      operationId: addPlaceImage
+      parameters:
+        - name: place_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: Image uploaded successfully
+
+  /places/{place_id}/images/{img_id}:
+    get:
+      tags: [places]
+      summary: Retrieve an image file for a place
+      operationId: getPlaceImage
+      parameters:
+        - name: place_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+        - name: img_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: The image file (binary stream)
+
+    delete:
+      tags: [places]
+      summary: Delete an image record for a place
+      operationId: deletePlaceImage
+      parameters:
+        - name: place_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+        - name: img_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Image record deleted
+
+  /departments:
+    get:
+      tags: [departments]
+      summary: List all departments
+      operationId: listDepartments
+      responses:
+        "200":
+          description: List of Departments with image IDs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Department"
+
+    post:
+      tags: [departments]
+      summary: Create a new department
+      operationId: addDepartment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewDepartment"
+            example:
+              name: "Engineering"
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThingIdResponse"
+
+  /departments/{dep_id}:
+    get:
+      tags: [departments]
+      summary: Get a single department (detailed)
+      operationId: getDepartment
+      parameters:
+        - name: dep_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+      responses:
+        "200":
+          description: Department with images
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Department"
+
+    put:
+      tags: [departments]
+      summary: Update an existing department
+      operationId: updateDepartment
+      parameters:
+        - name: dep_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Department"
+      responses:
+        "200":
+          description: Updated
+
+    delete:
+      tags: [departments]
+      summary: Delete a department
+      operationId: deleteDepartment
+      parameters:
+        - name: dep_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+      responses:
+        "200":
+          description: Deleted
+
+  /departments/{dep_id}/images:
+    get:
+      tags: [departments]
+      summary: List images for a department
+      operationId: listDepartmentImages
+      parameters:
+        - name: dep_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+      responses:
+        "200":
+          description: Array of image records for the department
+
+    post:
+      tags: [departments]
+      summary: Upload an image for a department
+      operationId: addDepartmentImage
+      parameters:
+        - name: dep_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: Image uploaded successfully
+
+  /departments/{dep_id}/images/{img_id}:
+    get:
+      tags: [departments]
+      summary: Retrieve an image file for a department
+      operationId: getDepartmentImage
+      parameters:
+        - name: dep_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+        - name: img_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: The image file (binary stream)
+
+    delete:
+      tags: [departments]
+      summary: Delete an image record for a department
+      operationId: deleteDepartmentImage
+      parameters:
+        - name: dep_id
+          in: path
+          required: true
+          schema: { type: integer, format: int32 }
+        - name: img_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Image record deleted
+
+  /labels:
+    get:
+      tags: [labels]
+      summary: List all labels
+      operationId: listLabels
+      responses:
+        "200":
+          description: All labels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Label"
+
+    post:
+      tags: [labels]
+      summary: Create a new label
+      operationId: addLabel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewLabel"
+            example:
+              name: "Screws"
+              description: "All types of screws"
+              color: "#ff5733"
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Label"
+
+components:
+  schemas:
+    AuthInfo:
+      type: object
+      properties:
+        exp:
+          type: integer
+          format: int64
+          description: Token expiration (Unix timestamp)
+        iat:
+          type: integer
+          format: int64
+          description: Token issued-at (Unix timestamp)
+        sub:
+          type: string
+          description: Google subject identifier
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        picture:
+          type: string
+          format: uri
+        given_name:
+          type: string
+        family_name:
+          type: string
+        level:
+          $ref: "#/components/schemas/AuthorizationLevel"
+
+    AuthorizationLevel:
+      type: string
+      enum: [NONE, READER, REQUESTER, EDITOR]
+      description: >
+        NONE       — no access
+        READER     — can read things/places/departments
+        REQUESTER  — can request reservations
+        EDITOR     — can create/update/delete
+
+    Thing:
+      type: object
+      properties:
+        id: { type: integer, format: int32 }
+        count: { type: integer, format: int32 }
+        in_place:
+          type: [integer, "null"]
+          format: int32
+        name: { type: string }
+        description:
+          type: [string, "null"]
+        main_img:
+          type: [string, "null"]
+          format: uuid
+        label_ids:
+          type: array
+          items: { type: integer, format: int32 }
+        reservations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reservation"
+
+    ThingDetailed:
+      allOf:
+        - $ref: "#/components/schemas/Thing"
+        - type: object
+          properties:
+            department:
+              type: [integer, "null"]
+              format: int32
+            image_ids:
+              type: array
+              items: { type: string, format: uuid }
+
+    NewThing:
+      type: object
+      required: [name]
+      properties:
+        count:
+          type: integer
+          format: int32
+          default: 1
+        name: { type: string }
+        description: { type: string }
+        in_place:
+          type: [integer, "null"]
+          format: int32
+        in_department:
+          type: [integer, "null"]
+          format: int32
+
+    Place:
+      type: object
+      properties:
+        id: { type: integer, format: int32 }
+        name: { type: string }
+        description:
+          type: [string, "null"]
+        in_place:
+          type: [integer, "null"]
+          format: int32
+        in_department:
+          type: [integer, "null"]
+          format: int32
+        main_img:
+          type: [string, "null"]
+          format: uuid
+        image_ids:
+          type: array
+          items: { type: string, format: uuid }
+        reservations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reservation"
+
+    NewPlace:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        in_place:
+          type: [integer, "null"]
+          format: int32
+        in_department:
+          type: [integer, "null"]
+          format: int32
+
+    Department:
+      type: object
+      properties:
+        id: { type: integer, format: int32 }
+        name: { type: string }
+        main_img:
+          type: [string, "null"]
+          format: uuid
+        image_ids:
+          type: array
+          items: { type: string, format: uuid }
+
+    NewDepartment:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+
+    Label:
+      type: object
+      properties:
+        id: { type: integer, format: int32 }
+        color:
+          type: [string, "null"]
+        name: { type: string }
+        description:
+          type: [string, "null"]
+
+    NewLabel:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        color: { type: string }
+
+    ThingImage:
+      type: object
+      properties:
+        thing_id: { type: integer, format: int32 }
+        id:
+          type: string
+          format: uuid
+
+    PlaceImage:
+      type: object
+      properties:
+        place_id: { type: integer, format: int32 }
+        id:
+          type: string
+          format: uuid
+
+    DepartmentImage:
+      type: object
+      properties:
+        department_id: { type: integer, format: int32 }
+        id:
+          type: string
+          format: uuid
+
+    Reservation:
+      type: object
+      properties:
+        id: { type: integer, format: int32 }
+        count:
+          type: integer
+          format: int32
+        reserved_by: { type: string }
+
+    ThingIdResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int32 }
+      description: Response payload after creating a thing/place/department
+
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access-token
+      description: >
+        The session token is a JWT signed server-side. It is set as a
+        `HttpOnly` cookie named `access-token` after successful OAuth or local
+        login, and must be sent back with every request (Axum extracts it
+        automatically from the Cookie header).
+
+security:
+  - cookieAuth: []
