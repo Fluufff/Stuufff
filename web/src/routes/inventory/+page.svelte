@@ -8,9 +8,13 @@
 		type Place,
 		type Department
 	} from '$lib/data';
+	import { getTabs, getActiveTab, setActiveTab } from './state.svelte';
 	import { auth } from '$lib/auth.svelte';
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
+
+	import DepartmentTab from './department_tab.svelte';
+	import Tabs from '$lib/components/tabs.svelte';
 
 	// const things = fetchThings();
 	// const places = fetchPlaces();
@@ -37,72 +41,25 @@
 		}
 		return undefined;
 	};
+
+	let activeTab = $derived(getActiveTab());
 </script>
 
-<section class="flex flex-col gap-4">
+<section class="flex flex-col gap-4 p-4">
 	{#await Promise.all([things, places, departments, labels, auth])}
 		<p>loading things...</p>
 	{:then [things, places, departments, labels, auth]}
 		<section>
-			<button
-				type="button"
-				class={[
-					displayMode == 'department'
-						? 'bg-green-800'
-						: 'border border-green-700 hover:bg-green-700',
-					'rounded-md p-2'
-				]}
-				onclick={() => (displayMode = 'department')}>Departments</button
-			>
-			<button
-				type="button"
-				class={[
-					displayMode == 'place' ? 'bg-green-800' : 'border border-green-700 hover:bg-green-700',
-					'rounded-md p-2'
-				]}
-				onclick={() => (displayMode = 'place')}>Locations</button
-			>
-			<button
-				type="button"
-				class={[
-					displayMode == 'things' ? 'bg-green-800' : 'border border-green-700 hover:bg-green-700',
-					'rounded-md p-2'
-				]}
-				onclick={() => (displayMode = 'things')}>Things</button
-			>
+			<Tabs tabs={getTabs()} {setActiveTab}></Tabs>
 		</section>
 
-		{#if displayMode == 'department'}
-			<!-- <section>
-				<button type="button" class="bg-green-800 hover:bg-green-700 rounded-md p-2" onclick={() => goto(resolve("/inventory/places/new"))}>New department</button>
-			</section> -->
-
-			<section class="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2">
-				<p>image</p>
-				<p>name</p>
-
-				{#each Object.entries(departments) as [id, department] (id)}
-					<div class="w-20 h-20 bg-gray-600 p-2 flex justify-center items-center">
-						{#if department.main_img}
-							<img
-								class="max-h-16 max-w-16"
-								src="/api/v1/places/{department.id}/images/{department.main_img}"
-								alt=""
-							/>
-						{:else}
-							<span class="icon-[material-symbols--no-photography-outline] bg-gray-200 text-[24px]"
-							></span>
-						{/if}
-					</div>
-
-					<p>{department.name}</p>
-				{/each}
-			</section>
-		{:else if displayMode == 'place'}
+		{#if activeTab.label == 'Departments'}
+			<DepartmentTab {departments} />
+		{:else if activeTab.label == 'Locations'}
 			<section>
 				<button
 					type="button"
-					class="bg-green-800 hover:bg-green-700 rounded-md p-2"
+					class="rounded-md bg-green-800 p-2 hover:bg-green-700"
 					onclick={() => goto(resolve('/inventory/places/new'))}>New place</button
 				>
 			</section>
@@ -116,7 +73,7 @@
 
 				{#each Object.entries(places) as [id, place] (id)}
 					{@const dep = getDepartment(place, places, departments)}
-					<div class="w-20 h-20 bg-gray-600 p-2 flex justify-center items-center">
+					<div class="flex h-20 w-20 items-center justify-center bg-gray-600 p-2">
 						{#if place.main_img}
 							<img
 								class="max-h-16 max-w-16"
@@ -155,11 +112,11 @@
 					</div>
 				{/each}
 			</section>
-		{:else}
+		{:else if activeTab.label == 'Things'}
 			<section>
 				<button
 					type="button"
-					class="bg-green-800 hover:bg-green-700 rounded-md p-2"
+					class="rounded-md bg-green-800 p-2 hover:bg-green-700"
 					onclick={() => goto(resolve('/inventory/things/new'))}>New item</button
 				>
 			</section>
@@ -178,7 +135,7 @@
 					{@const dep = getDepartment(thing, places, departments)}
 					<a
 						href={resolve(`/inventory/things/${thing.id}`)}
-						class="w-20 h-20 bg-gray-600 p-2 flex justify-center items-center"
+						class="flex h-20 w-20 items-center justify-center bg-gray-600 p-2"
 					>
 						{#if thing.main_img}
 							<img
@@ -216,7 +173,7 @@
 								{@const label = labels[label_id]}
 								{@const label_color = label.color || 'gray'}
 								<p
-									class="px-2 py-1 border rounded-full font-bold text-sm flex items-center size-max"
+									class="flex size-max items-center rounded-full border px-2 py-1 text-sm font-bold"
 									style:border-color={label_color}
 									style:color="color-mix(in srgb, {label_color} 50%, white)"
 									style:background-color="color-mix(in srgb, {label_color} 25%, transparent)"
@@ -235,14 +192,14 @@
 							{/each}
 						{/if}
 					</div>
-					<div class="flex gap-2 items-center">
+					<div class="flex items-center gap-2">
 						{#if auth.level == 'REQUESTER' || auth.level == 'EDITOR'}
-							<button type="button" class="bg-green-800 hover:bg-green-700 rounded-md p-2"
+							<button type="button" class="rounded-md bg-green-800 p-2 hover:bg-green-700"
 								>reserve</button
 							>
 						{/if}
 						<a
-							class="bg-green-800 hover:bg-green-700 rounded-md p-2"
+							class="rounded-md bg-green-800 p-2 hover:bg-green-700"
 							href={resolve(`/inventory/things/${thing.id}`)}
 						>
 							{#if auth.level == 'EDITOR'}
