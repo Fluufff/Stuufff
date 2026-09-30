@@ -1,6 +1,6 @@
 <script lang="ts">
-	// import { onMount } from 'svelte';
-	// onMount(() => (window.location.pathname = '/inventory'));
+	import { onMount } from 'svelte';
+	onMount(() => (window.location.pathname = '/inventory'));
 </script>
 
 <section>

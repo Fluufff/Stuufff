@@ -6,12 +6,10 @@
 		labels,
 		type Thing,
 		updateThing,
-		departments,
 		newLabel,
-
 		FetchError
-
-	} from '$lib/data';
+	} from '$lib/data.svelte';
+	import { departments } from '$lib/data/department.svelte';
 
 	let editLabels = $state(false);
 	let labelSearch = $state('');
@@ -51,16 +49,18 @@
 
 		thing.id = id;
 
-		fetchThing(id).then((resp) => {
-			thing.value = resp;
-			thing.original = structuredClone(resp);
-		}).catch(err => {
-			if (err instanceof FetchError) {
-				thing.errorCode = err.code;
-			}
-			console.error('failed to fetch thing', {err});
-			thing.error = err.message;
-		});
+		fetchThing(id)
+			.then((resp) => {
+				thing.value = resp;
+				thing.original = structuredClone(resp);
+			})
+			.catch((err) => {
+				if (err instanceof FetchError) {
+					thing.errorCode = err.code;
+				}
+				console.error('failed to fetch thing', { err });
+				thing.error = err.message;
+			});
 	});
 
 	const edited = $derived.by(() => {
@@ -100,7 +100,7 @@
 	};
 </script>
 
-<section class="grid-area max-w-6xl flex flex-col m-4 gap-2">
+<section class="grid-area m-4 flex max-w-6xl flex-col gap-2">
 	{#if thing.errorCode == 404}
 		<p>Thing not found</p>
 	{:else if thing.errorCode == 410}
@@ -113,7 +113,7 @@
 		{#await Promise.all([places, labels, filteredLabels, departments])}
 			<p>loading additional metadata...</p>
 		{:then [places, labels, filteredLabels, departments]}
-			<div class="grid grid-area gap-4">
+			<div class="grid-area grid gap-4">
 				<section class="actions flex flex-row gap-2">
 					<button
 						aria-label="save"
@@ -141,20 +141,23 @@
 					<button
 						aria-label="delete"
 						onclick={() => {
-							const confirmed = confirm('Are you sure you want to delete this thing? This action cannot be undone.');
+							const confirmed = confirm(
+								'Are you sure you want to delete this thing? This action cannot be undone.'
+							);
 							if (thing.value != null && confirmed) {
 								fetch(`/api/v1/things/${thing.value.id}`, { method: 'DELETE' }).then(() =>
 									history.back()
 								);
 							}
 						}}
-						class="bg-red-800 hover:bg-red-700 rounded-md p-2 flex gap-2 items-center"
-						disabled={thing.value == null}>
+						class="flex items-center gap-2 rounded-md bg-red-800 p-2 hover:bg-red-700"
+						disabled={thing.value == null}
+					>
 						<span class="icon-[material-symbols--delete] text-[16px]"></span>
 						<span>Delete</span>
 					</button>
 				</section>
-				<section class="images flex gap-2 flex-nowrap">
+				<section class="images flex flex-nowrap gap-2">
 					{#each thing.value.image_ids as image_id (image_id)}
 						<div class="h-40 w-40 bg-gray-600 p-2">
 							<img
@@ -171,7 +174,7 @@
 				</section>
 				<section class="side flex flex-col flex-nowrap gap-4">
 					<div
-						class="border-b-1 border-gray-600 grid grid-cols-2 grid-cols-[1fr_auto] gap-4 pb-4 px-2"
+						class="grid grid-cols-2 grid-cols-[1fr_auto] gap-4 border-b-1 border-gray-600 px-2 pb-4"
 					>
 						<p class="col-span-2 font-bold">data</p>
 
@@ -195,7 +198,7 @@
 					<div class="flex flex-col border-b-1 border-gray-600 pb-4">
 						<button
 							type="button"
-							class="flex justify-between items-center p-2 rounded-md mb-4 hover:bg-gray-600"
+							class="mb-4 flex items-center justify-between rounded-md p-2 hover:bg-gray-600"
 							onclick={() => (editLabels = !editLabels)}
 						>
 							<p class="font-bold">Labels</p>
@@ -207,7 +210,7 @@
 								{#each thing.value.label_ids as label_id, i (i)}
 									{@const label_color = labels[label_id].color || 'gray'}
 									<p
-										class="px-2 py-1 border rounded-full font-bold text-sm flex items-center gap-1 size-max"
+										class="flex size-max items-center gap-1 rounded-full border px-2 py-1 text-sm font-bold"
 										style:border-color={label_color}
 										style:color="color-mix(in srgb, {label_color} 50%, white)"
 										style:background-color="color-mix(in srgb, {label_color} 25%, transparent)"
@@ -225,16 +228,16 @@
 								{/each}
 							</div>
 							<div
-								class="absolute top-0 left-0 right-0 bg-primary-900 border border-primary-600 rounded-lg p-4 flex flex-col gap-4 z-10"
+								class="bg-primary-900 border-primary-600 absolute top-0 right-0 left-0 z-10 flex flex-col gap-4 rounded-lg border p-4"
 								hidden={!editLabels}
 							>
 								<p>Apply labels to this thing</p>
 								<input type="text" bind:value={labelSearch} />
-								<div class="border-t-1 border-gray-600 flex flex-col">
+								<div class="flex flex-col border-t-1 border-gray-600">
 									{#each filteredLabels as id (id)}
 										{@const label = labels[id]}
 										<button
-											class="flex items-start border-b-1 border-gray-600 hover:bg-gray-600 py-2 gap-2 text-left"
+											class="flex items-start gap-2 border-b-1 border-gray-600 py-2 text-left hover:bg-gray-600"
 											onclick={() => toggleLabel(thing.value!, id)}
 										>
 											<input
@@ -242,9 +245,9 @@
 												placeholder="Filter labels"
 												checked={thing.value.label_ids.indexOf(id) != -1}
 											/>
-											<p style:background-color={label.color} class="w-4 h-4 rounded-full"></p>
+											<p style:background-color={label.color} class="h-4 w-4 rounded-full"></p>
 											<div>
-												<p class="text-base/4 mb-1">{label.name}</p>
+												<p class="mb-1 text-base/4">{label.name}</p>
 												<p>{label.description}</p>
 											</div>
 										</button>
@@ -267,7 +270,7 @@
 					<div class="flex flex-col border-b-1 border-gray-600 pb-4">
 						<button
 							type="button"
-							class="flex justify-between items-center p-2 rounded-md mb-4 hover:bg-gray-600"
+							class="mb-4 flex items-center justify-between rounded-md p-2 hover:bg-gray-600"
 						>
 							<p class="font-bold">Reservations</p>
 							<span class="icon-[material-symbols--edit-note]"></span>

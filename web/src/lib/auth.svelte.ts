@@ -14,6 +14,11 @@ export type AuthInfo = {
 	level: 'NONE' | 'READER' | 'REQUESTER' | 'EDITOR';
 };
 
+export function canEdit() {
+	const currentAuth = auth;
+	return currentAuth?.level === 'EDITOR';
+}
+
 // export const currentAuth = $state({ auth: null as AuthInfo | null });
 
 // export const renew = async () => {
@@ -40,4 +45,10 @@ const getAuth = async () => {
 		});
 };
 
-export const auth = getAuth();
+export let auth = $state<AuthInfo | {}>({} as AuthInfo | {});
+export const loadAuth = async () => {
+	const newAuth = await getAuth();
+	for (const key in newAuth) {
+		(auth as Record<string, unknown>)[key] = (newAuth as Record<string, unknown>)[key];
+	}
+};

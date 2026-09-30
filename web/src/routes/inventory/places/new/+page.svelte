@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { newPlace } from '$lib/data';
+	import { newPlace } from '$lib/data.svelte';
 	import { resolve } from '$app/paths';
-	import { places, departments } from '$lib/data';
+	import { places } from '$lib/data.svelte';
+	import { departments } from '$lib/data/department.svelte';
 
 	let name = $state('');
 	let images = $state(new DataTransfer().files);
@@ -14,7 +15,7 @@
 	let saving = $state(false);
 </script>
 
-<section class="max-w-6xl grid grid-cols-[auto_1fr] gap-2">
+<section class="grid max-w-6xl grid-cols-[auto_1fr] gap-2">
 	{#await Promise.all([places, departments])}
 		<p>loading things...</p>
 	{:then [places, departments]}

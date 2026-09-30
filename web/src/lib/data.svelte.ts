@@ -36,13 +36,6 @@ export interface Label {
 	color?: string;
 }
 
-export interface Department {
-	id: number;
-	name: string;
-	main_img?: string;
-	image_ids: string[];
-}
-
 export class FetchError extends Error {
 	code: number;
 
@@ -69,26 +62,6 @@ export const places = fetchPlaces().then((places) =>
 			return places;
 		},
 		{} as Record<number, Place>
-	)
-);
-
-const fetchDepartments = async () => {
-	const resp = await fetch(`/api/v1/departments`);
-	if (!resp.ok) {
-		throw new FetchError(resp.status, 'Failed to fetch departments');
-	}
-
-	const departments: Department[] = await resp.json();
-
-	return departments;
-};
-export const departments = fetchDepartments().then((departments) =>
-	departments.reduce(
-		(departments, dep) => {
-			departments[dep.id] = dep;
-			return departments;
-		},
-		{} as Record<number, Department>
 	)
 );
 

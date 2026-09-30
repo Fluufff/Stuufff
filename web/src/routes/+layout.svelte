@@ -4,7 +4,7 @@
 	import Menu from './Menu.svelte';
 	import { routes } from './routes';
 	import Lightswitch from '$lib/components/Lightswitch.svelte';
-	import { auth } from '$lib/auth.svelte';
+	import { auth, loadAuth } from '$lib/auth.svelte';
 	import { page } from '$app/state';
 	import { dates, setClasses } from '$lib/dates';
 
@@ -14,6 +14,7 @@
 
 	onMount(async () => {
 		setClasses();
+		await loadAuth();
 	});
 
 	const breadcrumb = $derived.by(() => {
@@ -33,52 +34,56 @@
 	});
 </script>
 
-<header class="mx-auto flex h-16 w-full shrink-0 items-center gap-2 bg-gray-800 pr-8 pl-4">
-	<button
-		aria-label="menu"
-		onclick={() => (hideMenu = !hideMenu)}
-		class="rounded-md p-2 leading-[0] hover:bg-gray-700"
-	>
-		<span class="icon-[material-symbols--menu-rounded] bg-gray-200 text-[24px]"></span>
-	</button>
-	<div class="flex flex-1 items-center gap-2 text-white">
-		<p class="logo mr-2 text-lg">Stüüfff</p>
-		{#each breadcrumb as piece, i (i)}
-			<p>{piece}</p>
-			{#if i + 1 != breadcrumb.length}
-				<p>&gt;</p>
-			{/if}
-		{/each}
-	</div>
-	<Lightswitch></Lightswitch>
-
-	{#await auth}
-		<span></span>
-	{:then auth}
-		<img class="max-h-full p-2 rounded-md" src={auth.picture} alt="" />
-		<div class="flex flex-col text-xs text-white">
-			<span>{auth.name}</span>
-			<span>{auth.level}</span>
+{#if !auth}
+	<p>Loading...</p>
+{:else}
+	<header class="mx-auto flex h-16 w-full shrink-0 items-center gap-2 bg-gray-800 pr-8 pl-4">
+		<button
+			aria-label="menu"
+			onclick={() => (hideMenu = !hideMenu)}
+			class="rounded-md p-2 leading-[0] hover:bg-gray-700"
+		>
+			<span class="icon-[material-symbols--menu-rounded] bg-gray-200 text-[24px]"></span>
+		</button>
+		<div class="flex flex-1 items-center gap-2 text-white">
+			<p class="logo mr-2 text-lg">Stüüfff</p>
+			{#each breadcrumb as piece, i (i)}
+				<p>{piece}</p>
+				{#if i + 1 != breadcrumb.length}
+					<p>&gt;</p>
+				{/if}
+			{/each}
 		</div>
-	{/await}
-</header>
+		<Lightswitch></Lightswitch>
 
-<nav class="relative flex flex-1">
-	<main
-		class:ml-0={hideMenu}
-		class:ml-64={!hideMenu}
-		class="ml-64 flex-1 transition-[margin-left] duration-300 ease-in-out"
-	>
-		{@render children()}
-	</main>
-	<nav
-		class:-left-64={hideMenu}
-		class:left-0={!hideMenu}
-		class="absolute top-0 z-10 flex h-full w-64 transform flex-col justify-between bg-gray-100 transition-[left] duration-300 ease-in-out dark:bg-gray-700"
-	>
-		<Menu></Menu>
+		{#await auth}
+			<span></span>
+		{:then auth}
+			<img class="max-h-full rounded-md p-2" src={auth.picture} alt="" />
+			<div class="flex flex-col text-xs text-white">
+				<span>{auth.name}</span>
+				<span>{auth.level}</span>
+			</div>
+		{/await}
+	</header>
+
+	<nav class="relative flex flex-1">
+		<main
+			class:ml-0={hideMenu}
+			class:ml-64={!hideMenu}
+			class="ml-64 flex-1 transition-[margin-left] duration-300 ease-in-out"
+		>
+			{@render children()}
+		</main>
+		<nav
+			class:-left-64={hideMenu}
+			class:left-0={!hideMenu}
+			class="absolute top-0 z-10 flex h-full w-64 transform flex-col justify-between bg-gray-100 transition-[left] duration-300 ease-in-out dark:bg-gray-700"
+		>
+			<Menu></Menu>
+		</nav>
 	</nav>
-</nav>
+{/if}
 
 {#if dates.xmas}
 	<!-- https://codepen.io/alphardex/pen/dyPorwJ -->
