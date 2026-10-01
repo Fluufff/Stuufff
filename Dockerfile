@@ -1,7 +1,7 @@
 # syntax=docker.io/docker/dockerfile:1.21.0
 
 FROM debian:12.15-slim AS base-image
-FROM node:22 AS web-builder
+FROM node:24 AS web-builder
 
 WORKDIR /app
 COPY web/package.json web/package-lock.json ./
