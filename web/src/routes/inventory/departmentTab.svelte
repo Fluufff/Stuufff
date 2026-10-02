@@ -90,7 +90,7 @@
 				</td>
 				<td class="p-2">{department.name}</td>
 				{#if canEdit()}
-					<td class="max-w-20 p-2">
+					<td class="flex h-20 w-fit items-center gap-3 p-2">
 						<Button
 							icon="edit"
 							label="Edit"
@@ -98,6 +98,16 @@
 							circle
 							onClick={() => {
 								onShowEditModal(department.id);
+							}}
+						/>
+						<Button
+							icon="delete"
+							label="Delete"
+							iconOnly
+							circle
+							status="danger"
+							onClick={async () => {
+								await deleteDepartment(department.id);
 							}}
 						/>
 					</td>
