@@ -10,6 +10,7 @@
 		type,
 		fullWidth,
 		status,
+		class: className,
 		onClick
 	}: {
 		icon?: icon;
@@ -19,6 +20,7 @@
 		type?: 'button' | 'submit' | 'reset';
 		fullWidth?: boolean;
 		status?: 'danger' | 'warning' | 'success';
+		class?: string;
 		onClick?: () => void;
 	} = $props();
 
@@ -37,7 +39,7 @@
 				? 'border-severity-noncompliant hover:bg-severity-noncompliant focus:bg-severity-noncompliant'
 				: status === 'success'
 					? 'border-severity-compliant hover:bg-severity-compliant focus:bg-severity-compliant'
-					: 'border-green-600 hover:bg-green-600 focus:bg-green-600'} transition-colors duration-300 ease-in-out"
+					: 'border-green-600 hover:bg-green-600 focus:bg-green-600'} transition-colors duration-300 ease-in-out {className}"
 	>
 		{#if iconName}
 			<Icon name={iconName} />

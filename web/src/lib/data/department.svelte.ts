@@ -7,9 +7,10 @@ export interface Department {
 	main_url?: string;
 	image_ids: string[];
 	image_urls: Record<string, string>;
+	order: number;
 }
 
-type DepartmentResponse = Omit<Department, 'main_url' | 'image_urls'>;
+type DepartmentResponse = Omit<Department, 'main_url' | 'image_urls'> & { order?: number };
 
 async function fetchDepartmentDetails(id: number) {
 	const resp = await fetch(`/api/v1/departments/${id}`);
@@ -35,7 +36,7 @@ async function addImageUrls(department: DepartmentResponse): Promise<Department>
 		...department,
 		image_urls,
 		main_url: department.main_img ? image_urls[department.main_img] : undefined
-	};
+	} as Department;
 }
 
 export async function fetchDepartments() {
@@ -45,7 +46,13 @@ export async function fetchDepartments() {
 	}
 
 	const departments: DepartmentResponse[] = await resp.json();
-	return Promise.all(departments.map(addImageUrls));
+	const depOrder = departments
+		.sort((a, b) => a.name.localeCompare(b.name))
+		.map((dep, index) => {
+			dep.order = index;
+			return dep;
+		});
+	return Promise.all(depOrder.map(addImageUrls));
 }
 
 export const departments = $state<Record<number, Department>>(
@@ -78,7 +85,8 @@ export async function updateDepartment(
 			id: department.id,
 			name: department.name,
 			main_img: department.main_img ?? null,
-			image_ids: department.image_ids
+			image_ids: department.image_ids,
+			order: department.order
 		})
 	});
 	if (!updateResp.ok) {
@@ -129,4 +137,32 @@ export async function deleteDepartment(departmentId: number) {
 		throw new FetchError(deleteResp.status, 'Failed to delete department');
 	}
 	delete departments[departmentId];
+}
+
+export async function createDepartment(name: string, image?: File) {
+	const createResp = await fetch(`/api/v1/departments`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+			name
+		})
+	});
+	if (!createResp.ok) {
+		throw new FetchError(createResp.status, 'Failed to create department');
+	}
+	const newID = (await createResp.json()).id;
+	if (image) await uploadDepartmentImage(newID, image);
+
+	const newDepartment = await fetchDepartmentDetails(newID);
+	let parsedNewDepartment = await addImageUrls(newDepartment);
+
+	departments[newID] = parsedNewDepartment;
+	Object.values(departments)
+		.sort((a, b) => a.name.localeCompare(b.name))
+		.map((dep, index) => {
+			dep.order = index;
+			return dep;
+		});
 }

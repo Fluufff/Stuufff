@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
-	import { updateDepartment, deleteDepartment, type Department } from '$lib/data/department.svelte';
+	import {
+		updateDepartment,
+		deleteDepartment,
+		type Department,
+		createDepartment
+	} from '$lib/data/department.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import Input from '$lib/components/Input.svelte';
@@ -24,6 +29,10 @@
 	let editDepartment = $state<
 		(Department & { newImage?: FileList; imagesToDelete?: string[] }) | undefined
 	>(undefined);
+
+	let showCreateModal = $state(false);
+	let newDepartmentName = $state<string | undefined>(undefined);
+	let newDepartmentImage = $state<FileList | undefined>(undefined);
 
 	function onShowEditModal(departmentID: number) {
 		console.log('Edit modal shown', departmentID);
@@ -57,6 +66,25 @@
 		}
 	}
 
+	async function createSubmit(event: SubmitEvent) {
+		event.preventDefault();
+		try {
+			if (!newDepartmentName) return;
+			await createDepartment(newDepartmentName, newDepartmentImage?.[0]);
+			showCreateModal = false;
+			newDepartmentName = undefined;
+			newDepartmentImage = undefined;
+		} catch (error) {
+			console.error(error);
+		}
+	}
+
+	function onShowCreateModal() {
+		showCreateModal = true;
+		newDepartmentName = undefined;
+		newDepartmentImage = undefined;
+	}
+
 	$effect(() => {
 		if (!showEditModal) return;
 		if (!editDepartment) return;
@@ -69,12 +97,19 @@
 	<thead>
 		<tr class="border-b border-gray-300">
 			<th class="w-fit p-2 text-left">Image</th>
-			<th class=" p-2 text-left">Name</th>
-			<th></th>
+			<th class="w-full p-2 text-left">Name</th>
+			<th class="w-fit whitespace-nowrap"
+				><Button
+					icon="plus"
+					label="Create department"
+					class="my-1 whitespace-nowrap"
+					onClick={onShowCreateModal}
+				></Button></th
+			>
 		</tr>
 	</thead>
 	<tbody>
-		{#each Object.entries(departments) as [id, department] (id)}
+		{#each Object.entries(departments).sort((a, b) => a[1].order - b[1].order) as [id, department] (id)}
 			<tr
 				class="cursor-pointer border-gray-200 transition-colors duration-300 ease-in-out not-last:border-b hover:bg-gray-100"
 			>
@@ -116,6 +151,17 @@
 		{/each}
 	</tbody>
 </table>
+
+<Modal bind:open={showCreateModal} title="Create new department" width="500px">
+	<form onsubmit={createSubmit}>
+		<Input bind:value={newDepartmentName} placeholder="Department Name" label="Name" required />
+		<FileInput bind:files={newDepartmentImage} label="Image" accept="image/*" preview />
+		<div class="flex gap-3">
+			<Button label="Cancel" type="button" fullWidth onClick={() => (showCreateModal = false)} />
+			<Button label="Create" type="submit" fullWidth />
+		</div>
+	</form>
+</Modal>
 
 <Modal bind:open={showEditModal} title="Editing department: {editDepartment?.name}" width="500px">
 	{#if editDepartment}

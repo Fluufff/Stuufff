@@ -18,7 +18,9 @@
 	} = $props();
 
 	let inputId = `input-${Math.random().toString(36).substr(2, 9)}`;
+	let hasChanged = false;
 	let isValid = $derived.by(() => {
+		if (!hasChanged) return true;
 		if (validate) return validate(value);
 		if (required && !value) return false;
 
@@ -48,6 +50,7 @@
 		id={inputId}
 		{required}
 		aria-invalid={!isValid}
+		oninput={() => (hasChanged = true)}
 	/>
 	{#if invalidMessage && !isValid}
 		<p class="mt-1 text-sm text-red-500">{invalidMessage}</p>
