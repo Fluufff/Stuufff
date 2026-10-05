@@ -46,7 +46,7 @@
 		bind:value
 		{placeholder}
 		{type}
-		class="input"
+		class="input dark:bg-gray-800 dark:text-white!"
 		id={inputId}
 		{required}
 		aria-invalid={!isValid}

@@ -23,13 +23,13 @@
 	let typeClass = $derived.by(() => {
 		switch (type) {
 			case 'success':
-				return 'bg-green-300 dark:bg-green-700';
+				return 'bg-green-300 dark:bg-green-900';
 			case 'error':
-				return 'bg-red-300 dark:bg-red-700';
+				return 'bg-red-300 dark:bg-red-900';
 			case 'warning':
-				return 'bg-yellow-300 dark:bg-yellow-700';
+				return 'bg-yellow-300 dark:bg-yellow-900';
 			case 'info':
-				return 'bg-sky-200 dark:bg-blue-700';
+				return 'bg-sky-200 dark:bg-blue-900';
 			default:
 				return '';
 		}

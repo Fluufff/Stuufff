@@ -69,7 +69,7 @@
 		bind:this={tooltipElement}
 		use:teleport={target}
 		style="top: {y}px; left: {x}px;"
-		class="tooltip pointer-events-none fixed z-50 max-w-[calc(100vw-1rem)] rounded border border-gray-300 bg-white px-4 py-2 whitespace-normal shadow-md"
+		class="tooltip pointer-events-none fixed z-50 max-w-[calc(100vw-1rem)] rounded border border-gray-300 bg-white px-4 py-2 whitespace-normal shadow-md dark:bg-gray-800"
 	>
 		{title}
 	</div>
