@@ -19,7 +19,7 @@ use http::{HeaderMap, StatusCode};
 use rand::RngExt;
 use serde::{Deserialize, Serialize};
 use serde_with::{NoneAsEmptyString, serde_as};
-use tokio::fs::create_dir;
+use tokio::fs::create_dir_all;
 use tokio::{
     fs::{self, File},
     io::BufWriter,
@@ -577,7 +577,7 @@ pub async fn add_thing_image(
 
         // Create the file. `File` implements `AsyncWrite`.
         // let path = std::path::Path::new(state.config.media_folder.as_str()).join(uuid.to_string());
-        create_dir(format!("{}/images", state.config.media_folder)).await?;
+        create_dir_all(format!("{}/images", state.config.media_folder)).await?;
         let path = format!("{}/images/{}", state.config.media_folder, uuid);
         let path = std::path::Path::new(&path);
         let mut file = BufWriter::new(File::create(path).await?);
