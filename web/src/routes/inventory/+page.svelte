@@ -1,14 +1,17 @@
 <script lang="ts">
-	import { things, places, labels, type Thing, type Place } from '$lib/data.svelte';
+	import { things, labels, type Thing } from '$lib/data.svelte';
 	import { type Department } from '$lib/data/department.svelte';
 	import { departments } from '$lib/data/department.svelte';
+	import { places } from '$lib/data/places.svelte';
 	import { getTabs, getActiveTab, setActiveTab } from './state.svelte';
 	import { auth } from '$lib/auth.svelte';
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
 
 	import DepartmentTab from './departmentTab.svelte';
+	import PlacesTab from './places/+page.svelte';
 	import Tabs from '$lib/components/Tabs.svelte';
+	import type { Place } from '$lib/data/places.svelte';
 
 	// const things = fetchThings();
 	// const places = fetchPlaces();
@@ -53,63 +56,7 @@
 			{#if activeTab.label == 'Departments'}
 				<DepartmentTab {departments} />
 			{:else if activeTab.label == 'Locations'}
-				<section>
-					<button
-						type="button"
-						class="rounded-md bg-green-800 p-2 hover:bg-green-700"
-						onclick={() => goto(resolve('/inventory/places/new'))}>New place</button
-					>
-				</section>
-
-				<section class="grid grid-cols-[max-content_1fr_repeat(3,max-content)] gap-x-4 gap-y-2">
-					<p>image</p>
-					<p>name</p>
-					<p>location</p>
-					<p>department</p>
-					<p>reserved</p>
-
-					{#each Object.entries(places) as [id, place] (id)}
-						{@const dep = getDepartment(place, places, departments)}
-						<div class="flex h-20 w-20 items-center justify-center bg-gray-600 p-2">
-							{#if place.main_img}
-								<img
-									class="max-h-16 max-w-16"
-									src="/api/v1/places/{place.id}/images/{place.main_img}"
-									alt=""
-								/>
-							{:else}
-								<span
-									class="icon-[material-symbols--no-photography-outline] bg-gray-200 text-[24px]"
-								></span>
-							{/if}
-						</div>
-
-						<p>{place.name}</p>
-						<div>
-							{#if place.in_place == undefined}
-								<span></span>
-							{:else}
-								<span>{places[place.in_place].name}</span>
-							{/if}
-						</div>
-						<div>
-							{#if dep == undefined}
-								<span></span>
-							{:else}
-								<span>{dep.name}</span>
-							{/if}
-						</div>
-						<div>
-							{#if place.reservations.length == 0}
-								<p></p>
-							{:else}
-								{#each place.reservations as reservation (reservation.id)}
-									<p>{reservation.reserved_by}</p>
-								{/each}
-							{/if}
-						</div>
-					{/each}
-				</section>
+				<PlacesTab {places} {departments} />
 			{:else if activeTab.label == 'Things'}
 				<section>
 					<button

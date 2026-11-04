@@ -6,7 +6,8 @@
 		label,
 		required,
 		validate,
-		invalidMessage = 'Invalid input'
+		invalidMessage = 'Invalid input',
+		className
 	}: {
 		value: string | number;
 		placeholder?: string;
@@ -15,6 +16,7 @@
 		required?: boolean;
 		validate?: (value: string | number) => boolean;
 		invalidMessage?: string;
+		className?: string;
 	} = $props();
 
 	let inputId = `input-${Math.random().toString(36).substr(2, 9)}`;
@@ -46,7 +48,7 @@
 		bind:value
 		{placeholder}
 		{type}
-		class="input dark:bg-gray-800 dark:text-white!"
+		class="input min-h-9 dark:bg-gray-800 dark:text-white! {className}"
 		id={inputId}
 		{required}
 		aria-invalid={!isValid}

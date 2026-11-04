@@ -11,6 +11,7 @@
 		fullWidth,
 		status,
 		class: className,
+		disabled,
 		onClick
 	}: {
 		icon?: icon;
@@ -20,7 +21,8 @@
 		type?: 'button' | 'submit' | 'reset';
 		fullWidth?: boolean;
 		status?: 'danger' | 'warning' | 'success';
-		class?: string;
+		class?: string | Object;
+		disabled?: boolean;
 		onClick?: () => void;
 	} = $props();
 
@@ -29,7 +31,8 @@
 
 <Tooltip title={label} target={buttonID} {fullWidth}>
 	<button
-		onclick={onClick}
+		onclick={disabled ? undefined : onClick}
+		{disabled}
 		type={type ?? 'button'}
 		class="flex cursor-pointer items-center gap-2 {circle ? 'rounded-full' : 'rounded'} {iconOnly
 			? 'h-[32px] w-[32px] justify-center'

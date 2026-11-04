@@ -3,7 +3,8 @@ export const icon = {
 	close: 'icon-[material-symbols--close]',
 	edit: 'icon-[material-symbols--edit]',
 	delete: 'icon-[material-symbols--delete]',
-	plus: 'icon-[material-symbols--add]'
+	plus: 'icon-[material-symbols--add]',
+	chevron_right: 'icon-[material-symbols--chevron-right]'
 } as const;
 
 export type icon = keyof typeof icon;

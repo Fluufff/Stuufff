@@ -15,20 +15,6 @@ export interface Thing {
 	}[];
 }
 
-export interface Place {
-	id: number;
-	name: string;
-	description: string;
-	in_place?: number;
-	in_department?: number;
-	main_img?: string;
-	image_ids: string[];
-	reservations: {
-		id: number;
-		reserved_by: string;
-	}[];
-}
-
 export interface Label {
 	id: number;
 	name: string;
@@ -44,26 +30,6 @@ export class FetchError extends Error {
 		this.code = code;
 	}
 }
-
-const fetchPlaces = async () => {
-	const resp = await fetch(`/api/v1/places`);
-	if (!resp.ok) {
-		throw new FetchError(resp.status, 'Failed to fetch places');
-	}
-
-	const places: Place[] = await resp.json();
-
-	return places;
-};
-export const places = fetchPlaces().then((places) =>
-	places.reduce(
-		(places, place) => {
-			places[place.id] = place;
-			return places;
-		},
-		{} as Record<number, Place>
-	)
-);
 
 const fetchLabels = async () => {
 	const resp = await fetch(`/api/v1/labels`);
@@ -160,27 +126,6 @@ export async function newThing(thing: {
 
 	if (!response.ok) {
 		throw new FetchError(response.status, 'Failed to create thing');
-	}
-
-	return response.json();
-}
-
-export async function newPlace(place: {
-	name: string;
-	description: string;
-	in_department?: number;
-	in_place?: number;
-}): Promise<Place> {
-	const response = await fetch('/api/v1/places', {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json'
-		},
-		body: JSON.stringify(place)
-	});
-
-	if (!response.ok) {
-		throw new FetchError(response.status, 'Failed to create place');
 	}
 
 	return response.json();
