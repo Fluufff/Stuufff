@@ -70,7 +70,9 @@
 		mainImg = found.main_img ?? null;
 	});
 
-	let cansave = $derived(name != '' && description != '');
+	let nameValid = $state(true);
+	let descriptionValid = $state(true);
+	let cansave = $derived(nameValid && descriptionValid);
 	let saving = $state(false);
 
 	const save = async () => {
@@ -125,11 +127,18 @@
 		{:else}
 			<fieldset class="flex flex-col space-y-4 rounded border p-3">
 				<legend class="px-3 text-2xl font-bold">{isEditing ? 'Edit Place' : 'New Place'}</legend>
-				<Input label="Name" bind:value={name} required placeholder="Enter the name of the place" />
+				<Input
+					label="Name"
+					bind:value={name}
+					bind:valid={nameValid}
+					required
+					placeholder="Enter the name of the place"
+				/>
 				<Textarea
 					rows={7}
 					name="description"
 					bind:value={description}
+					bind:valid={descriptionValid}
 					required
 					label="Description"
 					placeholder="Enter the description of the place"
@@ -140,7 +149,7 @@
 					options={[
 						{ value: '', label: '-' },
 						...Object.entries(places)
-							.filter(([id, place]) => (editId ? place.id !== Number(editId) : true))
+							.filter(([_id, place]) => (editId ? place.id !== Number(editId) : true))
 							.map(([id, place]) => ({ value: id, label: place.name }))
 					]}
 				/>

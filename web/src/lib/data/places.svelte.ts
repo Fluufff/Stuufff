@@ -1,4 +1,5 @@
 import { FetchError } from '$lib/data.svelte';
+import type { Reservation } from '$lib/data/reservations.svelte';
 
 export interface Place {
 	id: number;
@@ -11,13 +12,7 @@ export interface Place {
 	in_department?: number;
 	in_place?: number;
 	sub_places?: Place[];
-	reservations: PlaceReservation[];
-}
-
-export interface PlaceReservation {
-	id: number;
-	reserved_by: string;
-	count: number;
+	reservations: Reservation[];
 }
 
 type PlaceResponse = Omit<Place, 'main_url' | 'image_urls'>;
@@ -32,7 +27,7 @@ async function fetchPlaces() {
 
 	const placeResponses: PlaceResponse[] = await resp.json();
 
-	const places = await Promise.all(placeResponses.map(addImageUrls));
+	const places = placeResponses.map(addImageUrls);
 
 	const recursivedPlaces = places.reduce(
 		(res, place) => {
@@ -48,15 +43,9 @@ async function fetchPlaces() {
 	return recursivedPlaces;
 }
 
-async function addImageUrls(place: PlaceResponse): Promise<Place> {
-	const image_urls: Record<string, string> = {};
-	await Promise.all(
-		place.image_ids.map(async (id) => {
-			const resp = await fetch(`/api/v1/places/${place.id}/images/${id}`);
-			if (resp.ok) {
-				image_urls[id] = URL.createObjectURL(await resp.blob());
-			}
-		})
+function addImageUrls(place: PlaceResponse): Place {
+	const image_urls = Object.fromEntries(
+		place.image_ids.map((id) => [id, `/api/v1/places/${place.id}/images/${id}`])
 	);
 
 	return {
@@ -129,7 +118,7 @@ export async function fetchPlace(id: number): Promise<Place> {
 		throw new FetchError(resp.status, 'Failed to fetch place');
 	}
 	const placeResponse: PlaceResponse = await resp.json();
-	const place = await addImageUrls(placeResponse);
+	const place = addImageUrls(placeResponse);
 	places[place.id] = place;
 	return place;
 }

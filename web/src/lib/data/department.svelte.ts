@@ -21,15 +21,9 @@ async function fetchDepartmentDetails(id: number) {
 	return (await resp.json()) as DepartmentResponse;
 }
 
-async function addImageUrls(department: DepartmentResponse): Promise<Department> {
-	const image_urls: Record<string, string> = {};
-	await Promise.all(
-		department.image_ids.map(async (id) => {
-			const resp = await fetch(`/api/v1/departments/${department.id}/images/${id}`);
-			if (resp.ok) {
-				image_urls[id] = URL.createObjectURL(await resp.blob());
-			}
-		})
+function addImageUrls(department: DepartmentResponse): Department {
+	const image_urls = Object.fromEntries(
+		department.image_ids.map((id) => [id, `/api/v1/departments/${department.id}/images/${id}`])
 	);
 
 	return {
@@ -52,7 +46,7 @@ export async function fetchDepartments() {
 			dep.order = index;
 			return dep;
 		});
-	return Promise.all(depOrder.map(addImageUrls));
+	return depOrder.map(addImageUrls);
 }
 
 export const departments = $state<Record<number, Department>>(
@@ -102,7 +96,7 @@ export async function updateDepartment(
 		})
 	);
 
-	const updatedDepartment = await addImageUrls(await fetchDepartmentDetails(department.id));
+	const updatedDepartment = addImageUrls(await fetchDepartmentDetails(department.id));
 	departments[department.id] = updatedDepartment;
 }
 
@@ -156,7 +150,7 @@ export async function createDepartment(name: string, image?: File) {
 	if (image) await uploadDepartmentImage(newID, image);
 
 	const newDepartment = await fetchDepartmentDetails(newID);
-	let parsedNewDepartment = await addImageUrls(newDepartment);
+	const parsedNewDepartment = addImageUrls(newDepartment);
 
 	departments[newID] = parsedNewDepartment;
 	Object.values(departments)

@@ -1,8 +1,7 @@
-<script lang="ts">
+<!-- <script lang="ts">
 	import { page } from '$app/state';
 	import {
 		fetchThing,
-		places,
 		labels,
 		type Thing,
 		updateThing,
@@ -10,6 +9,9 @@
 		FetchError
 	} from '$lib/data.svelte';
 	import { departments } from '$lib/data/department.svelte';
+	import { places } from '$lib/data/places.svelte';
+	import { resizeImageIfNeeded } from '$lib/utils/resizeImage';
+	import Textarea from '$lib/components/Textarea.svelte';
 
 	let editLabels = $state(false);
 	let labelSearch = $state('');
@@ -69,24 +71,30 @@
 
 	const saving = $state({ thing: false, images: false });
 
-	const saveImages = (event: Event) => {
+	const saveImages = async (event: Event) => {
 		const input = event.currentTarget as HTMLInputElement;
-		if (!input.files) return;
+		if (!input.files || !input.files.length) return;
 
 		saving.images = true;
 
-		for (const file of input.files) {
-			fetch(`/api/v1/things/${thing.id}/images`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': file.type
-				},
-				body: file
-			});
+		try {
+			await Promise.all(
+				Array.from(input.files).map(async (file) => {
+					const resized = await resizeImageIfNeeded(file);
+					return fetch(`/api/v1/things/${thing.id}/images`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': resized.type || file.type
+						},
+						body: resized
+					});
+				})
+			);
+		} finally {
+			saving.images = false;
 		}
 
 		input.value = '';
-		saving.images = false;
 	};
 
 	const toggleLabel = (thing: Thing, label_id: number) => {
@@ -170,7 +178,7 @@
 				</section>
 				<section class="main flex flex-col justify-stretch">
 					<input type="text" name="name" bind:value={thing.value.name} />
-					<textarea rows="7" name="description" bind:value={thing.value.description}></textarea>
+					<Textarea rows={7} name="description" bind:value={thing.value.description} />
 				</section>
 				<section class="side flex flex-col flex-nowrap gap-4">
 					<div
@@ -313,4 +321,4 @@
 			'main side';
 		grid-template-columns: 1fr min-content;
 	}
-</style>
+</style> -->

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { things, labels, type Thing } from '$lib/data.svelte';
 	import { type Department } from '$lib/data/department.svelte';
 	import { departments } from '$lib/data/department.svelte';
 	import { places } from '$lib/data/places.svelte';
@@ -10,8 +9,11 @@
 
 	import DepartmentTab from './departmentTab.svelte';
 	import PlacesTab from './places/+page.svelte';
+	import ThingTab from './things/+page.svelte';
 	import Tabs from '$lib/components/Tabs.svelte';
 	import type { Place } from '$lib/data/places.svelte';
+	import { labels } from '$lib/data/label.svelte';
+	import { type Thing, things } from '$lib/data/things.svelte';
 
 	// const things = fetchThings();
 	// const places = fetchPlaces();
@@ -58,7 +60,8 @@
 			{:else if activeTab.label == 'Locations'}
 				<PlacesTab {places} {departments} />
 			{:else if activeTab.label == 'Things'}
-				<section>
+				<ThingTab {things} {places} {labels} {departments} />
+				<!-- <section>
 					<button
 						type="button"
 						class="rounded-md bg-green-800 p-2 hover:bg-green-700"
@@ -158,7 +161,7 @@
 							</a>
 						</div>
 					{/each}
-				</section>
+				</section> -->
 			{/if}
 		{:catch err}
 			<p>loading failed: {err}</p>

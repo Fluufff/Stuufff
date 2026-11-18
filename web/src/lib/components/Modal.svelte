@@ -48,17 +48,17 @@
 		style="width: {width};"
 		onclose={() => (open = false)}
 	>
-		<div class="header flex items-center justify-between px-8 py-4 {typeClass}">
+		<div class="header flex items-center justify-between p-3 {typeClass}">
 			{#if title}
 				<h2 class="text-lg font-bold">{title}</h2>
 			{/if}
 			<Button icon="close" label="Close" iconOnly circle onClick={() => (open = false)} />
 		</div>
-		<div class="body px-8 py-4">
+		<div class="body p-3">
 			{@render children()}
 		</div>
 		{#if footer}
-			<div class="footer">
+			<div class="footer p-3">
 				{@render footer()}
 			</div>
 		{/if}

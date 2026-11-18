@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { isBlank } from '$lib/validation';
+
 	let {
 		value = $bindable(),
 		placeholder,
@@ -8,27 +10,29 @@
 		invalidMessage = 'Invalid input',
 		className,
 		name,
-		rows = 7
+		rows = 7,
+		valid = $bindable<boolean>(true)
 	}: {
-		value: string;
+		value?: string;
 		placeholder?: string;
 		label?: string;
 		required?: boolean;
-		validate?: (value: string) => boolean;
+		validate?: (value: string | undefined) => boolean;
 		invalidMessage?: string;
 		className?: string;
 		name?: string;
 		rows?: number;
+		valid?: boolean;
 	} = $props();
 
-	let textareaId = `textarea-${Math.random().toString(36).substr(2, 9)}`;
-	let hasChanged = false;
-	let isValid = $derived.by(() => {
-		if (!hasChanged) return true;
-		if (validate) return validate(value);
-		if (required && !value) return false;
+	let textareaId = `textarea-${Math.random().toString(36).slice(2, 11)}`;
+	let touched = $state(false);
 
-		return true;
+	let isValid = $derived(validate ? validate(value) : !(required && isBlank(value)));
+	let showError = $derived(touched && !isValid);
+
+	$effect(() => {
+		valid = isValid;
 	});
 </script>
 
@@ -44,12 +48,14 @@
 		{placeholder}
 		{name}
 		{rows}
-		class="input min-h-9 dark:bg-gray-800 dark:text-white! {className}"
+		class="input min-h-9 dark:bg-gray-800 dark:text-white! {className} {showError
+			? 'border-red-500'
+			: ''}"
 		id={textareaId}
 		{required}
-		aria-invalid={!isValid}
-		oninput={() => (hasChanged = true)}></textarea>
-	{#if invalidMessage && !isValid}
+		aria-invalid={showError}
+		oninput={() => (touched = true)}></textarea>
+	{#if invalidMessage && showError}
 		<p class="mt-1 text-sm text-red-500">{invalidMessage}</p>
 	{/if}
 </div>

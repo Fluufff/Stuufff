@@ -13,6 +13,7 @@
 	import FileInput from '$lib/components/FileInput.svelte';
 	import Switch from '$lib/components/Switch.svelte';
 	import ImageSelect from '$lib/components/ImageSelect.svelte';
+	import Image from '$lib/components/Image.svelte';
 	import { canEdit } from '$lib/auth.svelte';
 
 	let { departments }: { departments: Record<number, Department> } = $props();
@@ -33,6 +34,8 @@
 	let showCreateModal = $state(false);
 	let newDepartmentName = $state<string | undefined>(undefined);
 	let newDepartmentImage = $state<FileList | undefined>(undefined);
+	let newNameValid = $state(true);
+	let editNameValid = $state(true);
 
 	function onShowEditModal(departmentID: number) {
 		console.log('Edit modal shown', departmentID);
@@ -51,7 +54,7 @@
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
-		if (!editDepartment) return;
+		if (!editDepartment || !editNameValid) return;
 		saveError = '';
 		editDepartment.imagesToDelete = imagesToDelete;
 		try {
@@ -68,8 +71,8 @@
 
 	async function createSubmit(event: SubmitEvent) {
 		event.preventDefault();
+		if (!newNameValid || !newDepartmentName) return;
 		try {
-			if (!newDepartmentName) return;
 			await createDepartment(newDepartmentName, newDepartmentImage?.[0]);
 			showCreateModal = false;
 			newDepartmentName = undefined;
@@ -114,14 +117,7 @@
 				class="cursor-pointer border-gray-200 transition-colors duration-300 ease-in-out not-last:border-b hover:bg-gray-100 dark:hover:bg-gray-700"
 			>
 				<td class="h-20 max-h-20 w-20 max-w-20 p-2">
-					{#if department.main_img}
-						<img class="max-h-16 max-w-16" src={department.main_url} alt="" />
-					{:else}
-						<div class="flex items-center justify-center">
-							<span class="icon-[material-symbols--no-photography-outline] bg-gray-200 text-[20px]"
-							></span>
-						</div>
-					{/if}
+					<Image url={department.main_url} alt="" />
 				</td>
 				<td class="p-2">{department.name}</td>
 				{#if canEdit()}
@@ -154,7 +150,13 @@
 
 <Modal bind:open={showCreateModal} title="Create new department" width="500px">
 	<form onsubmit={createSubmit}>
-		<Input bind:value={newDepartmentName} placeholder="Department Name" label="Name" required />
+		<Input
+			bind:value={newDepartmentName}
+			bind:valid={newNameValid}
+			placeholder="Department Name"
+			label="Name"
+			required
+		/>
 		<FileInput bind:files={newDepartmentImage} label="Image" accept="image/*" preview />
 		<div class="flex gap-3">
 			<Button label="Cancel" type="button" fullWidth onClick={() => (showCreateModal = false)} />
@@ -166,7 +168,13 @@
 <Modal bind:open={showEditModal} title="Editing department: {editDepartment?.name}" width="500px">
 	{#if editDepartment}
 		<form onsubmit={submit}>
-			<Input bind:value={editDepartment.name} placeholder="Department Name" label="Name" required />
+			<Input
+				bind:value={editDepartment.name}
+				bind:valid={editNameValid}
+				placeholder="Department Name"
+				label="Name"
+				required
+			/>
 			{#if editDepartment.image_ids.length > 1}
 				<fieldset class="my-3">
 					<legend class="mb-2 font-medium">Select main image</legend>

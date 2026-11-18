@@ -5,6 +5,7 @@
 	import Input from '$lib/components/Input.svelte';
 	import Select from '$lib/components/Select.svelte';
 	import Button from '$lib/components/Button.svelte';
+	import Image from '$lib/components/Image.svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { canEdit } from '$lib/auth.svelte';
@@ -111,15 +112,7 @@
 					onclick={() => place.description && openRow(key)}
 				>
 					<td class="h-20 max-h-20 w-20 max-w-20 p-2">
-						{#if place.main_img}
-							<img class="max-h-16 max-w-16" src={place.main_url} alt="" />
-						{:else}
-							<div class="flex items-center justify-center">
-								<span
-									class="icon-[material-symbols--no-photography-outline] bg-gray-200 text-[20px]"
-								></span>
-							</div>
-						{/if}
+						<Image url={place.main_url} alt="" />
 					</td>
 					<td class="w-1/2 p-2 text-left">{place.name}</td>
 					<td class="w-1/2 p-2 text-left whitespace-nowrap"
@@ -170,10 +163,11 @@
 							{#if place.image_ids.length > 0 && place.image_urls}
 								<div class="flex flex-wrap gap-2">
 									{#each place.image_ids as imageId}
-										<img
-											class="max-h-64 max-w-64 rounded border border-gray-300 object-cover"
-											src={place.image_urls[imageId]}
+										<Image
+											url={place.image_urls[imageId]}
 											alt=""
+											class="max-h-64 max-w-64 rounded border border-gray-300 object-cover"
+											size={256}
 										/>
 									{/each}
 								</div>
